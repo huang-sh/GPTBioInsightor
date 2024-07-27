@@ -20,6 +20,7 @@ def test_gptcelltype():
     background = "Human blood"
     provider = "aliyun"
     model = "qwen2-72b-instruct"
-    celltype_ls = gptcelltype(gene_dic, background=background, provider=provider, model=model)
+    celltype_dic = gptcelltype(gene_dic, background=background, provider=provider, model=model)
+    celltype_ls = list(celltype_dic.values())
     assert "B" in celltype_ls[0]
     assert "T" in celltype_ls[1]

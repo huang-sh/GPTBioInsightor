@@ -70,5 +70,6 @@ def gptcelltype(
     if out is not None: 
         outhandle.close()
     celltypes = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
-    return celltypes
+    celltype_dic = {k:celltypes[idx] for idx, k in enumerate(gene_dic.keys())}
+    return celltype_dic
 
