@@ -10,7 +10,7 @@
 
 Install GPTBioInsightor from PyPi:
 ```shell
-pip install gptioinsightor
+pip install gptbioinsightor
 ```
 
 ## Usage
