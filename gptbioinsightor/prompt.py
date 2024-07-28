@@ -39,10 +39,10 @@ Geneset {setid}:
 Hi, GPTBioInsightor! Please infer all potential celltypes from above geneset based on provided INSTRUCTION.
 
 INSTRUCTION:
-1. you should check each gene and provide evidence and reason for every potential cell type, 
+1. you should check each gene and provide evidence and reason for every potential celltype, 
 2. for each potential cell type, strive to provide a more comprehensive list of gene markers
-3. give full consideration to BACKGROUND information
-4. give full consideration the cell states that the cell type is in, such as the stress-like state, invasive state, proliferation or other transient or dynamically responsive property of a cell to a background context—rather than a cell type
+3. give full consideration to context of cell: BACKGROUND
+4. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
 5. consider context-specific gene marker and common gene marker
 6. do not use the lacking of marker as your reason or evidence
 
@@ -77,36 +77,35 @@ For the output you should follow this format, don't show extra content:
 
 
 FINAL_CELLTYPE_PROMPT = """
-Hi, GPTBioInsightor! Please determine the most likely celltype from multiple potential celltypes of each geneset.Your reasoning process must be based on following INSTRUCTION.
+Hi, GPTBioInsightor! Please determine the most likely celltype from multiple potential celltypes of each geneset.Your reasoning process must be based on INSTRUCTION.
 
 INSTRUCTION:
-1. you should provide evidence and reason for most likely celltype of each geneset!
-2. give full consideration to BACKGROUND, determine the most logical celltype! 
-3. give full consideration to cell states that the cell type are in, such as the stress-like state, invasive state or other transient or dynamically responsive property of a cell to a background context—rather than a cell type!
-5. check if there are more genes within the respective gene set that support most likely celltype, besides the aforementioned gene marker!
-6. do not use the lacking of marker as your reason or evidence!
- 
+1. you should provide evidence and reason for most likely celltype of each geneset
+2. give full consideration to context of cell: BACKGROUND, determine the most logical celltype
+4. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
+5. consider cell-specific and context-specific gene markers first, then supported gene marker number
+6. don't use the lacking of marker as reason or evidence
+7. you can also propose a more specific cell type if you are sure it is better than provided celltypes
 
 BACKGROUND:
-{background}. Above are {geneset_num} genesets and their potential celltypes, genes of each geneset are upregulated in a corresponding cell type compared to other cell types.
+{background}. Above are {geneset_num} genesets and their potential celltypes, geneseach geneset is highly expressed relative to other gene sets..
 
 For the output you should follow this format:
 '''
-### [geneset id] : [ MOST LIKELY CELLTYPE ]
+### [geneset id] : [ CELLTYPE ]  // just celltype name
 **gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
 **reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
+**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
 
-### [geneset id] : [ MOST LIKELY CELLTYPE ]
+### [geneset id] : [ CELLTYPE ] // just celltype name
 **gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
 **reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
+**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
 
-### [geneset id] : [ MOST LIKELY CELLTYPE ]
+### [geneset id] : [ CELLTYPE ] // just celltype name
 **gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
 **reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
-
+**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
 ...
 
 '''
