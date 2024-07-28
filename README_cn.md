@@ -10,7 +10,7 @@
 
 使用pip安装：
 ```shell
-pip install gptioinsightor
+pip install gptbioinsightor
 ```
 
 ## 用法
