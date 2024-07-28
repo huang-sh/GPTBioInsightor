@@ -8,6 +8,7 @@
 
 quickstart.md
 seurat_usage.md
+models.md
 api.md
 
 ```
