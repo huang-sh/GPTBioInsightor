@@ -70,15 +70,15 @@ background = "Cells are PBMCs from a Healthy Donor"
 # you can set openai gpt-4o
 res = gbi.gptcelltype(result_dict, background=background, out="Seurat.qwen.celltype.md", topgenes=20, provider="aliyun", model="qwen2-72b-instruct")
 res
-{0: 'T lymphocytes (T cells)',
- 1: 'Monocytes/Macrophages',
- 2: 'T lymphocytes (T cells)',
- 3: 'B Lymphocytes (B Cells)',
- 4: 'Cytotoxic T Cells (CD8+)',
- 5: 'Monocytes/Macrophages',
- 6: 'Natural Killer (NK) Cells',
- 7: 'Dendritic Cells',
- 8: 'Platelets'}
+# {0: 'T lymphocytes (T cells)',
+#  1: 'Monocytes/Macrophages',
+#  2: 'T lymphocytes (T cells)',
+#  3: 'B Lymphocytes (B Cells)',
+#  4: 'Cytotoxic T Cells (CD8+)',
+#  5: 'Monocytes/Macrophages',
+#  6: 'Natural Killer (NK) Cells',
+#  7: 'Dendritic Cells',
+#  8: 'Platelets'}
 ```
 
 You can find more annotation information in `Seurat.qwen.celltype.likely.md` and `Seurat.qwen.celltype.most.md`. The contents of `Seurat.qwen.celltype.most.md` are as follows:

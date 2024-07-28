@@ -1,8 +1,10 @@
 # GPTBioInsightor
 
-![GPTBioInsightor](https://raw.githubusercontent.com/huang-sh/GPTBioInsightor/main/docs/en/source/img/logo.png)
-
-GPTBioInsightor is a tool designed for single-cell data analysis, particularly beneficial for newcomers to a biological field or those in interdisciplinary areas who may lack sufficient biological background knowledge. GPTBioInsightor harnesses the powerful capabilities of large language models to help people quickly gain knowledge and insight, enhancing their work efficiency.
+<table>
+    <tr>
+        <td><img src="https://raw.githubusercontent.com/huang-sh/GPTBioInsightor/main/docs/en/source/img/logo.png"></td><td>GPTBioInsightor is a tool designed for single-cell data analysis, particularly beneficial for newcomers to a biological field or those in interdisciplinary areas who may lack sufficient biological background knowledge. GPTBioInsightor utilizes the powerful capabilities of large language models to help people quickly gain knowledge and insight, enhancing their work efficiency.</td>
+    </tr>
+</table>
 
 ## Installation
 
