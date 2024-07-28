@@ -1,6 +1,10 @@
 # GPTBioInsightor
 
-GPTBioInsightor 是一款专为单细胞数据分析设计的工具，尤其适用于那些刚刚涉足某一生物学领域或从事跨学科研究的研究者，在初期阶段可能不具备充足的生物学背景知识。通过利用大型语言模型的强大能力，GPTBioInsightor 能够帮助用户迅速获取知识和深入见解，从而有效提升其工作效率。
+<table>
+    <tr>
+        <td><img src="https://raw.githubusercontent.com/huang-sh/GPTBioInsightor/main/docs/en/source/img/logo.png"></td><td>GPTBioInsightor 是一款专为单细胞数据分析设计的工具，尤其适用于那些刚刚涉足某一生物学领域或从事跨学科研究的研究者，在初期阶段可能不具备充足的生物学背景知识。通过利用大型语言模型的强大能力，GPTBioInsightor 能够帮助用户迅速获取知识和深入见解，从而有效提升其工作效率。</td>
+    </tr>
+</table>
 
 ## 安装
 
