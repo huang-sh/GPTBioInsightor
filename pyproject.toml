@@ -3,7 +3,10 @@ name = "gptbioinsightor"
 version = "0.1.0"
 description = ""
 authors = ["Shenghui Huang <hsh-me@outlook.com>"]
+license = "BSD 3-Clause"
 readme = "README.md"
+homepage = "https://github.com/huang-sh/GPTBioInsightor"
+repository = "https://github.com/huang-sh/GPTBioInsightor"
 
 [tool.poetry.dependencies]
 python = "^3.9"
