@@ -13,7 +13,7 @@ Install GPTBioInsightor from PyPi:
 pip install gptioinsightor
 ```
 
-## Quick Start
+## Usage
 
 
 ```python
