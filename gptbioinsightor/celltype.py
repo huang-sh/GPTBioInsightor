@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os, sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Iterable
 
 import scanpy as sc
 from anndata import AnnData
@@ -17,19 +20,57 @@ def _query_celltype(genes, queryid, background, provider, model, base_url, sys_p
 
 
 def gptcelltype(
-    input, 
-    out=None, 
-    background=None, 
-    group=None, 
-    key="rank_genes_groups", 
-    topgenes=15, 
-    n_jobs=None, 
+    input: AnnData | dict, 
+    out: Path| str = None, 
+    background: str = None, 
+    key: str = "rank_genes_groups", 
+    topgenes: int = 15, 
+    n_jobs: int | None = None, 
+    provider: str = "openai", 
+    model: str | None = None,
+    group: str | Iterable[str] | None = None,  
+    base_url: str | None = None, 
     rm_genes=True, 
-    provider="qwen", 
-    model=None, 
-    base_url=None, 
     sys_prompt=True
-):
+) -> dict:
+    """\
+    Annotating genesets using LLM, providing cell types, supporting gene markers, reasons, and potential cell state annotations.
+
+    Parameters
+    ----------
+    input : AnnData | dict
+        An AnnData object or geneset dict
+    out : Path | str, optional
+        output path, by default None
+    background : str, optional
+        background information of input data, by default None
+    key : str, optional
+        rank_genes_groups key, by default "rank_genes_groups"
+    topgenes : int, optional
+        select top gene for analysis, by default 15
+    n_jobs : int | None, optional
+        set multiple jobs for querying LLM, by default None
+    provider : str, optional
+        LLM provider, by default "openai"
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "moonshot" for kimi
+    model : str | None, optional
+        set a model based on LLM provider, by default None
+    group : str | Iterable, optional
+         Which group, by default None
+    base_url : str | None, optional
+        customized LLM API url by default None
+    rm_genes : bool, optional
+        rm rb and mt genes, by default True
+    sys_prompt : bool, optional
+        use system prompt, by default True
+
+    Returns
+    -------
+    dict
+        a celltypes dict
+    """
     if isinstance(input, AnnData):
         deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
         gene_dic = {}
