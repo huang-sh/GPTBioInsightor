@@ -6,14 +6,19 @@
     </tr>
 </table>
 
-## Installation
+## Documention
+
+Please checkout the documentations and tutorials at [GPTBioInsightor docs](https://gptbioinsightor.readthedocs.io/en/latest/)
+
+## Get started
+### Installation
 
 Install GPTBioInsightor from PyPi:
 ```shell
 pip install gptbioinsightor
 ```
 
-## Usage
+### Usage
 
 
 ```python
@@ -59,3 +64,6 @@ like:
 
 ```
 
+## Contact
+
+- Shenghui Huang (hsh-me@outlook.com)

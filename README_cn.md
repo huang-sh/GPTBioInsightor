@@ -6,14 +6,20 @@
     </tr>
 </table>
 
-## 安装
+## 文档
+
+详细文档见：[GPTBioInsightor中文文档](https://gptbioinsightor.readthedocs.io/zh-cn/latest/)
+
+## 快速开始
+
+### 安装
 
 使用pip安装：
 ```shell
 pip install gptbioinsightor
 ```
 
-## 用法
+### 用法
 
 
 ```python
@@ -59,3 +65,6 @@ res
 
 ```
 
+## 联系
+
+- Shenghui Huang (hsh-me@outlook.com)
