@@ -77,7 +77,7 @@ def gpt_celltype(
         for gid, sdf in deg_df.groupby("group"):
             gene_dic[gid] = sdf["names"].tolist()
     elif isinstance(input, dict):
-        gene_dic = input
+        gene_dic = input.copy()
     if rm_genes:
         for k in gene_dic.keys():
             gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
