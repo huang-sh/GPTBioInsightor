@@ -25,7 +25,7 @@ import gptbioinsightor as gbi
 # 设置数据的背景信息
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gptcelltype(adata, background=background, out="gbi.md", provider="openai", model="gpt-4o-mini")
+res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="openai", model="gpt-4o-mini")
 
 ```
 
@@ -45,7 +45,7 @@ import gptbioinsightor as gbi
 # 设置数据的背景信息
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gptcelltype(adata, background=background, out="gbi.md", provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="aliyun", model="qwen2-72b-instruct")
 
 ```
 
@@ -66,7 +66,7 @@ import gptbioinsightor as gbi
 # 设置数据的背景信息
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gptcelltype(adata, background=background, out="gbi.md", provider="moonshot", model="moonshot-v1-8k")
+res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="moonshot", model="moonshot-v1-8k")
 
 ```
 
@@ -88,6 +88,6 @@ BASE_URL = "https://api.flybirdsci.com/v1"
 
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gptcelltype(adata, background=background, out="gbi.md", base_url=BASE_URL, model="gpt-4o")
+res = gbi.gpt_celltype(adata, background=background, out="gbi.md", base_url=BASE_URL, model="gpt-4o")
 
 ```
