@@ -146,6 +146,45 @@ def gpt_subtype(
     rm_genes=True, 
     sys_prompt=True
 ) -> dict:
+    """\
+    Annotating cell subtypes using LLM, providing cell types, supporting gene markers, reasons, and potential cell state annotations.
+    Parameters
+    ----------
+    input : _type_
+        An AnnData object or geneset dict
+    out : Path | str | None, optional
+        output path, by default None
+    celltype : str, optional
+        major cell type, by default None
+    background : str, optional
+        background information of input data, by default None
+    group : Iterable[str] | None, optional
+        which group, by default None
+    key : str, optional
+        deg group key, by default "rank_genes_groups"
+    topgenes : int, optional
+        select top gene for analysis, by default 15
+    n_jobs : int | None, optional
+        set multiple jobs for querying LLM, by default None
+    provider : str, optional
+        LLM provider, by default "openai"
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "moonshot" for kimi
+    model : str | None, optional
+        set a model based on LLM provider, by default None
+    base_url : str | None, optional
+        customized LLM API url by default None
+    rm_genes : bool, optional
+        rm rb and mt genes, by default True
+    sys_prompt : bool, optional
+        use system prompt, by default True
+
+    Returns
+    -------
+    dict
+        a cell subtypes dict
+    """
     if isinstance(input, AnnData):
         deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
         gene_dic = {}
