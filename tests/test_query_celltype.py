@@ -1,4 +1,4 @@
-from gptbioinsightor.celltype import _query_celltype, gptcelltype
+from gptbioinsightor.celltype import _query_celltype, gpt_celltype
 
 
 def test_query_celltype():
@@ -13,14 +13,14 @@ def test_query_celltype():
     assert "B cell" in content
 
 
-def test_gptcelltype():
+def test_gpt_celltype():
     gene_dic = {
         "gs1": ["CD19", "MS4A1", "CD79A", "CD79", "CCR7"],
         "gs2": ["CD3", "CD3E", "CD8", "CD3D", "25CD" ]}
     background = "Human blood"
     provider = "aliyun"
     model = "qwen2-72b-instruct"
-    celltype_dic = gptcelltype(gene_dic, background=background, provider=provider, model=model)
+    celltype_dic = gpt_celltype(gene_dic, background=background, provider=provider, model=model)
     celltype_ls = list(celltype_dic.values())
     assert "B" in celltype_ls[0]
     assert "T" in celltype_ls[1]

@@ -19,7 +19,7 @@ def _query_celltype(genes, queryid, background, provider, model, base_url, sys_p
     return response.choices[0].message.content
 
 
-def gptcelltype(
+def gpt_celltype(
     input: AnnData | dict, 
     out: Path| str = None, 
     background: str = None, 
