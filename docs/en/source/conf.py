@@ -5,11 +5,14 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+from importlib.metadata import metadata
+
+info = metadata("gptbioinsightor")
 
 project = 'gptbioinsightor'
 copyright = '2024, huangsh'
 author = 'huangsh'
-release = '0.1.0'
+release = info["Version"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
