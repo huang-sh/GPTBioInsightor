@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "gptbioinsightor"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "GPTBioInsightor utilizes the powerful capabilities of large language models to help people quickly gain knowledge and insight, enhancing their work efficiency."
 authors = ["Shenghui Huang <hsh-me@outlook.com>"]
 license = "BSD 3-Clause"
 readme = "README.md"
