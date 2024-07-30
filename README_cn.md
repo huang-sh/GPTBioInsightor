@@ -34,7 +34,7 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # 确保adata已经进行了差异基因分析，例如: sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")
 # 我们使用Aliyun 的 qwen2-72b-instruct 进行演示, 但你也可以使用 openai gpt-4o
-res = gbi.gptcelltype(adata, background=background, out="celltype.md", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.gpt_celltype(adata, background=background, out="celltype.md", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
 res
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',
