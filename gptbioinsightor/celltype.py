@@ -82,7 +82,7 @@ def gptcelltype(
         for k in gene_dic.keys():
             gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
     for k in gene_dic.keys():
-            gene_dic[k] = gene_dic[k][:topgenes]
+        gene_dic[k] = gene_dic[k][:topgenes]
     if out is None:
         likely_handle, most_handle = sys.stdout, sys.stdout
     else:
