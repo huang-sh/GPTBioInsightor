@@ -39,11 +39,11 @@ Geneset {setid}:
 Hi, GPTBioInsightor! Please infer all potential celltypes from above geneset based on provided INSTRUCTION.
 
 INSTRUCTION:
-1. you should check each gene and provide evidence and reason for every potential celltype, 
-2. for each potential cell type, strive to provide a more comprehensive list of gene markers
-3. give full consideration to context of cell: BACKGROUND
-4. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
-5. consider context-specific gene marker and common gene marker
+1. consider cell-specific, context-specific and common gene marker
+2. check each gene and provide evidence and reason for every potential celltype, 
+3. for each potential cell type, strive to provide a more comprehensive list of gene markers
+4. give full consideration to context of cell: BACKGROUND
+5. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
 6. do not use the lacking of marker as your reason or evidence
 
 BACKGROUND:
@@ -94,18 +94,49 @@ For the output you should follow this format:
 '''
 ### [geneset id] : [ CELLTYPE ]  // just celltype name
 **gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
-**reason**: [REASON]
+**reason**: [REASON] // provide detailed evidence and reason for this CELLTYPE
 **cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
 
 ### [geneset id] : [ CELLTYPE ] // just celltype name
 **gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
-**reason**: [REASON]
+**reason**: [REASON] // provide detailed evidence and reason for this CELLTYPE
 **cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
+...
 
-### [geneset id] : [ CELLTYPE ] // just celltype name
-**gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
+'''
+"""
+
+
+SUBTYPE_PROMPT = """
+Hi, GPTBioInsightor! Please determine cell subtypes of {celltype} for each geneset.Your reasoning process must be based on INSTRUCTION.
+
+GENESET:
+'''
+{genesets}
+'''
+
+INSTRUCTION:
+1. determine cell subtype according to specific gene markers, please provide evidence and reason
+2. give full consideration to context of cell: BACKGROUND, determine the most logical subtype
+3. consider the context: BACKGROUND; speculate the cell state, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
+
+
+BACKGROUND:
+{background}
+
+For the output you should follow this format:
+'''
+### [geneset id] : [ SUBTYPE ] 
+** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
+** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
 **reason**: [REASON]
-**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
+**cell state**: [POTENTIAL CELL STATE]
+
+### [geneset id] : [ SUBTYPE ] 
+** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
+** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
+**reason**: [REASON]
+**cell state**: [POTENTIAL CELL STATE]
 ...
 
 '''

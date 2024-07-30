@@ -9,7 +9,7 @@ import scanpy as sc
 from anndata import AnnData
 
 from .core import query_model
-from .prompt import LIKELY_CELLTYPE_PROMPT, FINAL_CELLTYPE_PROMPT
+from .prompt import LIKELY_CELLTYPE_PROMPT, FINAL_CELLTYPE_PROMPT, SUBTYPE_PROMPT
 
 
 def _query_celltype(genes, queryid, background, provider, model, base_url, sys_prompt):
@@ -129,3 +129,55 @@ def gpt_celltype(
     celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
     return celltype_dic
 
+
+
+def gpt_subtype(
+    input, 
+    out: Path | str | None = None, 
+    celltype: str = None,
+    background: str = None, 
+    group: Iterable[str] | None = None,  
+    key: str = "rank_genes_groups", 
+    topgenes: int = 15, 
+    n_jobs: int | None = None, 
+    provider: str = "openai", 
+    model: str | None = None,
+    base_url: str | None = None, 
+    rm_genes=True, 
+    sys_prompt=True
+) -> dict:
+    if isinstance(input, AnnData):
+        deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
+        gene_dic = {}
+        for gid, sdf in deg_df.groupby("group"):
+            gene_dic[gid] = sdf["names"].tolist()
+    elif isinstance(input, dict):
+        gene_dic = input.copy()
+    if rm_genes:
+        for k in gene_dic.keys():
+            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
+
+    if out is None:
+        out_handle = sys.stdout
+    else:
+        out_handle = open(out, "w")
+        print("# Cell Subtype", file=out_handle)
+
+    genesets = [] 
+    for k in gene_dic.keys():
+        genestr = ",".join(gene_dic[k][:topgenes])
+        genesetstr = f"geneset {k}: {genestr}"
+        genesets.append(genesetstr)
+    genesets_txt = "\n".join(genesets)
+    msgs = [
+        {"role": "user", "content": SUBTYPE_PROMPT.format(celltype=celltype,genesets=genesets_txt, background=background)}
+    ]
+    
+    response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
+    res_content = response.choices[0].message.content.strip("```").strip("'''")
+    print(res_content, file=out_handle)
+    if out is not None: 
+        out_handle.close()
+    subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
+    subtype_dic = {k:subtype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
+    return subtype_dic

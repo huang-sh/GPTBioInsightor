@@ -1,4 +1,4 @@
-from gptbioinsightor.celltype import _query_celltype, gpt_celltype
+from gptbioinsightor.celltype import _query_celltype, gpt_celltype, gpt_subtype
 
 
 def test_query_celltype():
@@ -24,3 +24,15 @@ def test_gpt_celltype():
     celltype_ls = list(celltype_dic.values())
     assert "B" in celltype_ls[0]
     assert "T" in celltype_ls[1]
+
+
+def test_gpt_subtype():
+    gene_dic = {
+        "gs1": ["CD14", "S100A8", "S100A9", "LYZ", "FCN1", " TYROBP"],
+        "gs2": ["FCGR3A", "MS4A7", "CDKN1C", "CKB", "LILRA3", "IFITM3"]
+        }
+    background = "Human blood"
+    provider = "aliyun"
+    model = "qwen2-72b-instruct"
+    subtype_dic = gpt_subtype(gene_dic, background=background, provider=provider, model=model)
+    assert ["gs1", "gs2"] == list(subtype_dic.keys())
