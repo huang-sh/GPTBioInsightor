@@ -1,7 +1,7 @@
 # API
 
 
-## gptcelltype
+## celltype
 
 ```{eval-rst}
 .. module:: gptbioinsightor
