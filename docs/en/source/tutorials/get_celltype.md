@@ -1,31 +1,30 @@
-# 快速开始
+# Celltype Annotation
+## Installation 
 
-## 安装 
-
-使用pip安装GPTBioinsightor:
+install GPTBioinsightor using pip:
 
 ```shell
 pip install gptbioinsightor
 ```
 
-## 使用
+## Usage
 
 
-### 示例数据演示
+### Demo
 
-使用经典的10X Genomics PBMC数据进行演示。GPTBioinsightor 是个Python程序，我们使用Scanpy进行单细胞数据分析。
+Here, we will use the classic 10x Genomics PBMC data to demonstrate how to use GPTBioinsightor. GPTBioinsightor is a Python program, and we use Scanpy for single-cell data analysis.
 
-在Unix系统下，可以这么下载数据：
+In Unix system, you can download pbmc data like:
 ```shell
 mkdir data
 wget http://cf.10xgenomics.com/samples/cell-exp/1.1.0/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz -O data/pbmc3k_filtered_gene_bc_matrices.tar.gz
 cd data; tar -xzf pbmc3k_filtered_gene_bc_matrices.tar.gz
 ```
 
-然后在Python环境进行单细胞数据处理：
+Then perform single-cell data processing in a Python environment:
 ```python
 
-# 更详细的scanpy数据处理参考 https://scanpy.readthedocs.io/en/stable/tutorials/basics/clustering-2017.html
+# For more detailed Scanpy data processing, please refer to  https://scanpy.readthedocs.io/en/stable/tutorials/basics/clustering-2017.html
 
 import scanpy as sc
 
@@ -75,18 +74,20 @@ sc.tl.umap(adata)
 sc.tl.rank_genes_groups(adata, "leiden", key_added="logreg_deg", method="logreg")
 ```
 
-使用GPTBioinsightor进行细胞类型注解
+Performing cell type annotation using GPTBioinsightor:
 ```python
-### 设置大语言模型的 API KEY
+# set LLM API KEY
 import os
 os.environ['API_KEY'] = "sk-***"
 
+
 import gptbioinsightor as gbi
-# 设置数据的背景信息
+
+# set background information of data
 background = "Cells are PBMCs from a Healthy Donor" 
 
-# 使用阿里的通义千问qwen2-72b-instruct
-# 也可以设置成openai 的模型
+# here, I use Aliyun qwen2-72b-instruct
+# you can set openai gpt-4o
 res = gbi.get_celltype(adata, background=background, out="gbi.qwen.celltype.md", key="logreg_deg", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
 res
 # {'0': 'CD4+ T Helper Cells',
@@ -99,7 +100,7 @@ res
 #  '7': 'Platelets'}
 ```
 
-和基于已知gene marker的手动注释的结果进行比较
+Comparing the results with manual annotations based on classic gene markers
 ```python
 cell_type_name = {
     "0": "CD4 T",
@@ -121,10 +122,10 @@ adata.obs["celltypes_gbi"] = adata.obs["leiden"].map(
 sc.pl.umap(adata, color=["leiden", "celltype_manual", "celltypes_gbi"], legend_loc="on data", frameon=False)
 
 ```
-![cell cluster](./img/cell_cluster.png)
+![cell cluster](../img/cell_cluster.png)
 
 
-其中`gbi.qwen.celltype.most.md` 内容如下：
+You can find more annotation information in `gbi.qwen.celltype.most.md`. The contents of `gbi.qwen.celltype.most.md` are as follows:
 ```markdown
 # Most Possible celltypes
 ### Geneset 0: CD4+ T Helper Cells

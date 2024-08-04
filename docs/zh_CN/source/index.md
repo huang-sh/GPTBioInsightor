@@ -6,8 +6,7 @@
 :hidden: true
 :maxdepth: 1
 
-quickstart.md
-seurat_usage.md
+tutorials/index.md
 models.md
 api.md
 
