@@ -109,13 +109,22 @@ def get_celltype(
         
         res_content = response.choices[0].message.content.strip("```").strip("'''")
         print(res_content, file=most_handle)
-        celltype_ls.extend([line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")])
+        try:
+            type_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
+        except IndexError:
+            # low-capability model may not fully comply with the predefined output format
+            type_ls = [line.strip("#") for line in res_content.split("\n") if line.startswith("###")]
+        celltype_ls.extend(type_ls)
 
     if out is not None: 
         likely_handle.close()
         most_handle.close()
-        
-    celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
+    
+    if len(gene_dic.keys()) == len(celltype_ls):
+        celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
+    else: # low-capability model may not get correct output
+        celltype_dic = {}
+        print("The model may not be producing correct outputs; please try using a better model")
     return celltype_dic
 
 
@@ -198,7 +207,12 @@ def get_subtype(
     if out is not None: 
         out_handle.close()
     subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
-    subtype_dic = {k:subtype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
+
+    if len(gene_dic.keys()) == len(subtype_ls):
+        subtype_dic = {k:subtype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
+    else: # low-capability model may not get correct output
+        subtype_dic = {}
+        print("The model may not be producing correct outputs; please try using a better model")
     return subtype_dic
 
 
