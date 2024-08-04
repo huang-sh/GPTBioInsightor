@@ -9,7 +9,7 @@ from anndata import AnnData
 
 from .core import query_model
 from .utils import get_gene_dict
-from .prompt import LIKELY_CELLTYPE_PROMPT, FINAL_CELLTYPE_PROMPT, SUBTYPE_PROMPT
+from .prompt import *
 
 
 def _query_celltype(genes, queryid, background, provider, model, base_url, sys_prompt):
@@ -19,7 +19,7 @@ def _query_celltype(genes, queryid, background, provider, model, base_url, sys_p
     return response.choices[0].message.content
 
 
-def gpt_celltype(
+def get_celltype(
     input: AnnData | dict, 
     out: Path| str = None, 
     background: str = None, 
@@ -119,8 +119,7 @@ def gpt_celltype(
     return celltype_dic
 
 
-
-def gpt_subtype(
+def get_subtype(
     input, 
     out: Path | str | None = None, 
     celltype: str = None,
@@ -201,3 +200,77 @@ def gpt_subtype(
     subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
     subtype_dic = {k:subtype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
     return subtype_dic
+
+
+def check_celltype(
+    input: AnnData | dict, 
+    out: Path| str = None, 
+    background: str = None, 
+    key: str = "rank_genes_groups", 
+    topgenes: int = 15, 
+    n_jobs: int | None = None, 
+    provider: str = "openai", 
+    model: str | None = None,
+    group: str | Iterable[str] | None = None,  
+    base_url: str | None = None, 
+    rm_genes=True, 
+    sys_prompt=True
+):
+    """\
+    Check the reason why genesets are annotated as these celltypes.
+
+    Parameters
+    ----------
+    input : AnnData | dict
+        _description_
+    out : Path | str, optional
+        _description_, by default None
+    background : str, optional
+        _description_, by default None
+    key : str, optional
+        _description_, by default "rank_genes_groups"
+    topgenes : int, optional
+        _description_, by default 15
+    n_jobs : int | None, optional
+        _description_, by default None
+    provider : str, optional
+        _description_, by default "openai"
+    model : str | None, optional
+        _description_, by default None
+    group : str | Iterable[str] | None, optional
+        _description_, by default None
+    base_url : str | None, optional
+        _description_, by default None
+    rm_genes : bool, optional
+        _description_, by default True
+    sys_prompt : bool, optional
+        _description_, by default True
+
+    Returns
+    -------
+    None
+    """
+    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
+
+    if out is None:
+        out_handle = sys.stdout
+    else:
+        out_handle = open(out, "w")
+        print("# CellType checking", file=out_handle)
+
+    genesets = [] 
+    for k in gene_dic.keys():
+        genestr = ",".join(gene_dic[k])
+        genesetstr = f"Celltype: {k}; geneset: {genestr}"
+        genesets.append(genesetstr)
+    genesets_txt = "\n".join(genesets)
+    msgs = [
+        {"role": "user", 
+        "content": CHECK_TYPE_PROMPT.format(genesets=genesets_txt, background=background)}
+    ]
+    
+    response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
+    res_content = response.choices[0].message.content.strip("```").strip("'''")
+    print(res_content, file=out_handle)
+    if out is not None: 
+        out_handle.close()

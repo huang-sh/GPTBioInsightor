@@ -141,3 +141,34 @@ For the output you should follow this format:
 
 '''
 """
+
+
+
+CHECK_TYPE_PROMPT = """
+Hi, GPTBioInsightor! Please check celltype of corresponding to each geneset.Your reasoning process must be based on INSTRUCTION.
+
+GENESET:
+'''
+{genesets}
+'''
+
+INSTRUCTION:
+1. review and check if the celltype is reasonable based on the provided genes.
+2. give full consideration to context of cell: BACKGROUND
+3. provide new celltype in reason if the celltype is not reasonable 
+
+
+BACKGROUND:
+{background}
+
+For the output you should follow this format:
+'''
+### [geneset celltype]: [ YES or NO ]  // Is this type reasonable?
+**reason**: [REASON] // Why do you think it is or isn't reasonable?
+
+### [geneset celltype]: [ YES or NO ]  // Is this type reasonable?
+**reason**: [REASON] // Why do you think it is or isn't reasonable?
+...
+
+'''
+"""
