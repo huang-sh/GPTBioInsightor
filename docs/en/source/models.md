@@ -22,7 +22,7 @@ import gptbioinsightor as gbi
 
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="openai", model="gpt-4o-mini")
+res = gbi.get_celltype(adata, background=background, out="gbi.md", provider="openai", model="gpt-4o-mini")
 
 ```
 
@@ -41,7 +41,7 @@ import gptbioinsightor as gbi
 
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.get_celltype(adata, background=background, out="gbi.md", provider="aliyun", model="qwen2-72b-instruct")
 
 ```
 
@@ -61,7 +61,7 @@ import gptbioinsightor as gbi
 
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gpt_celltype(adata, background=background, out="gbi.md", provider="moonshot", model="moonshot-v1-8k")
+res = gbi.get_celltype(adata, background=background, out="gbi.md", provider="moonshot", model="moonshot-v1-8k")
 
 ```
 
@@ -83,6 +83,6 @@ BASE_URL = "https://api.flybirdsci.com/v1"
 
 background = "Cells are PBMCs from a Healthy Donor" 
 
-res = gbi.gpt_celltype(adata, background=background, out="gbi.md", base_url=BASE_URL, model="gpt-4o")
+res = gbi.get_celltype(adata, background=background, out="gbi.md", base_url=BASE_URL, model="gpt-4o")
 
 ```

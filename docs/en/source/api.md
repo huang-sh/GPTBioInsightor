@@ -8,6 +8,7 @@
 .. autosummary::
    :toctree: ./generated
 
-   gpt_celltype
-   gpt_subtype
+   get_celltype
+   get_subtype
+   check_celltype
 ```

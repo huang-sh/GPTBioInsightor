@@ -87,7 +87,7 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # 使用阿里的通义千问qwen2-72b-instruct
 # 也可以设置成openai 的模型
-res = gbi.gpt_celltype(adata, background=background, out="gbi.qwen.celltype.md", key="logreg_deg", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.get_celltype(adata, background=background, out="gbi.qwen.celltype.md", key="logreg_deg", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
 res
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',

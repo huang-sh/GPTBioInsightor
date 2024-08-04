@@ -88,7 +88,7 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # here, I use Aliyun qwen2-72b-instruct
 # you can set openai gpt-4o
-res = gbi.gpt_celltype(adata, background=background, out="gbi.qwen.celltype.md", key="logreg_deg", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.get_celltype(adata, background=background, out="gbi.qwen.celltype.md", key="logreg_deg", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
 res
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',
