@@ -5,10 +5,10 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterable
 
-import scanpy as sc
 from anndata import AnnData
 
 from .core import query_model
+from .utils import get_gene_dict
 from .prompt import LIKELY_CELLTYPE_PROMPT, FINAL_CELLTYPE_PROMPT, SUBTYPE_PROMPT
 
 
@@ -71,18 +71,7 @@ def gpt_celltype(
     dict
         a celltypes dict
     """
-    if isinstance(input, AnnData):
-        deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
-        gene_dic = {}
-        for gid, sdf in deg_df.groupby("group"):
-            gene_dic[gid] = sdf["names"].tolist()
-    elif isinstance(input, dict):
-        gene_dic = input.copy()
-    if rm_genes:
-        for k in gene_dic.keys():
-            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
-    for k in gene_dic.keys():
-        gene_dic[k] = gene_dic[k][:topgenes]
+    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
     if out is None:
         likely_handle, most_handle = sys.stdout, sys.stdout
     else:
@@ -186,16 +175,7 @@ def gpt_subtype(
     dict
         a cell subtypes dict
     """
-    if isinstance(input, AnnData):
-        deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
-        gene_dic = {}
-        for gid, sdf in deg_df.groupby("group"):
-            gene_dic[gid] = sdf["names"].tolist()
-    elif isinstance(input, dict):
-        gene_dic = input.copy()
-    if rm_genes:
-        for k in gene_dic.keys():
-            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
+    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
 
     if out is None:
         out_handle = sys.stdout
@@ -205,7 +185,7 @@ def gpt_subtype(
 
     genesets = [] 
     for k in gene_dic.keys():
-        genestr = ",".join(gene_dic[k][:topgenes])
+        genestr = ",".join(gene_dic[k])
         genesetstr = f"geneset {k}: {genestr}"
         genesets.append(genesetstr)
     genesets_txt = "\n".join(genesets)
