@@ -9,5 +9,5 @@
 tutorials/index.md
 models.md
 api.md
-
+release.md
 ```
