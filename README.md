@@ -33,7 +33,7 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # make sure you have perform DEG analysis for adata,like: sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")
 # Here, use qwen2-72b-instruct of Aliyun, but you also can use openai gpt-4o
-res = gbi.gpt_celltype(adata, background=background, out="celltype.md", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.get_celltype(adata, background=background, out="celltype.md", topgenes=15,provider="aliyun", model="qwen2-72b-instruct")
 res
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',
