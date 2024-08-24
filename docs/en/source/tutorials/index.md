@@ -8,8 +8,16 @@
 
 get_celltype.md
 get_subtype.md
-check_celltype
+check_celltype.md
 ```
+
+## Pathway
+```{toctree}
+:maxdepth: 1
+
+pathway.ipynb
+```
+
 
 ## For Seurat User
 

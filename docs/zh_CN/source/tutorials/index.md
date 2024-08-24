@@ -10,6 +10,12 @@ get_celltype.md
 get_subtype.md
 check_celltype
 ```
+## 通路分析
+```{toctree}
+:maxdepth: 1
+
+pathway_zh.ipynb
+```
 
 ## Seurat 用户
 
