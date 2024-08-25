@@ -18,11 +18,10 @@ release = info["Version"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_parser", 
+    "myst_nb", 
     "sphinx.ext.autosummary",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
-    "nbsphinx"
 ]
 
 templates_path = ['_templates']
@@ -52,3 +51,5 @@ napoleon_include_init_with_doc = False
 napoleon_use_rtype = True  # having a separate entry generally helps readability
 napoleon_use_param = True
 myst_heading_anchors = 6  # create anchors for h1-h6
+
+nb_execution_mode = "off"
