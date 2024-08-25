@@ -14,7 +14,7 @@ check_celltype
 ```{toctree}
 :maxdepth: 1
 
-pathway_zh.ipynb
+pathway.ipynb
 ```
 
 ## Seurat 用户
