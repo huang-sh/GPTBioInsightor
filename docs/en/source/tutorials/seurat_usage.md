@@ -68,7 +68,7 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # here, I use Aliyun qwen2-72b-instruct
 # you can set openai gpt-4o
-res = gbi.get_celltype(result_dict, background=background, out="Seurat.qwen.celltype.md", topgenes=20, provider="aliyun", model="qwen2-72b-instruct")
+res = gbi.get_celltype(result_dict, background=background, out="Seurat.qwen.celltype.md", topnumber=20, provider="aliyun", model="qwen2-72b-instruct")
 res
 # {0: 'T lymphocytes (T cells)',
 #  1: 'Monocytes/Macrophages',

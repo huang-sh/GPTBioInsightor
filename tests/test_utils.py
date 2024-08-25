@@ -7,22 +7,22 @@ def test_get_marker_from_seurat():
 
 
 def test_get_gene_dict():
-    topgenes = 15
+    topnumber = 15
     rm_gene = True 
     key = "rank_genes_groups"
     groups = None
     adata = sc.read_h5ad("tests/data/test.h5ad")
-    gene_dic = utils.get_gene_dict(adata, groups, key, topgenes, rm_gene)
+    gene_dic = utils.get_gene_dict(adata, groups, key, topnumber, rm_gene)
     assert list(gene_dic.keys()) == ["0","1","2","3","4","5","6","7"]
-    assert len(gene_dic["0"]) == topgenes
+    assert len(gene_dic["0"]) == topnumber
 
     groups = ["0", "1"]
-    gene_dic = utils.get_gene_dict(adata, groups, key, topgenes, rm_gene)
+    gene_dic = utils.get_gene_dict(adata, groups, key, topnumber, rm_gene)
     assert list(gene_dic.keys()) ==  ["0", "1"]
-    assert len(gene_dic["0"]) == topgenes
+    assert len(gene_dic["0"]) == topnumber
 
     groups = ["0", "1"]
     rm_gene = False
-    gene_dic = utils.get_gene_dict(adata, groups, key, topgenes, rm_gene)
+    gene_dic = utils.get_gene_dict(adata, groups, key, topnumber, rm_gene)
     bool_ls = [i.startswith(('MT-', 'RPL', 'RPS')) for i in gene_dic["0"]]
     assert any(bool_ls)

@@ -24,7 +24,7 @@ def get_celltype(
     out: Path| str = None, 
     background: str = None, 
     key: str = "rank_genes_groups", 
-    topgenes: int = 15, 
+    topnumber: int = 15, 
     n_jobs: int | None = None, 
     provider: str = "openai", 
     model: str | None = None,
@@ -46,7 +46,7 @@ def get_celltype(
         background information of input data, by default None
     key : str, optional
         rank_genes_groups key, by default "rank_genes_groups"
-    topgenes : int, optional
+    topnumber : int, optional
         select top gene for analysis, by default 15
     n_jobs : int | None, optional
         set multiple jobs for querying LLM, by default None
@@ -71,7 +71,7 @@ def get_celltype(
     dict
         a celltypes dict
     """
-    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
+    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
     if out is None:
         likely_handle, most_handle = sys.stdout, sys.stdout
     else:
@@ -87,7 +87,7 @@ def get_celltype(
         n_jobs = min(os.cpu_count()//2, len(gene_dic))
 
     def _aux_func(item):
-        return _query_celltype(item[1][:topgenes], item[0], background, provider, model, base_url, sys_prompt)
+        return _query_celltype(item[1][:topnumber], item[0], background, provider, model, base_url, sys_prompt)
         
     likely_res_ls = []
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
@@ -135,7 +135,7 @@ def get_subtype(
     background: str = None, 
     group: Iterable[str] | None = None,  
     key: str = "rank_genes_groups", 
-    topgenes: int = 15, 
+    topnumber: int = 15, 
     n_jobs: int | None = None, 
     provider: str = "openai", 
     model: str | None = None,
@@ -160,7 +160,7 @@ def get_subtype(
         which group, by default None
     key : str, optional
         deg group key, by default "rank_genes_groups"
-    topgenes : int, optional
+    topnumber : int, optional
         select top gene for analysis, by default 15
     n_jobs : int | None, optional
         set multiple jobs for querying LLM, by default None
@@ -183,7 +183,7 @@ def get_subtype(
     dict
         a cell subtypes dict
     """
-    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
+    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
 
     if out is None:
         out_handle = sys.stdout
@@ -221,7 +221,7 @@ def check_celltype(
     out: Path| str = None, 
     background: str = None, 
     key: str = "rank_genes_groups", 
-    topgenes: int = 15, 
+    topnumber: int = 15, 
     n_jobs: int | None = None, 
     provider: str = "openai", 
     model: str | None = None,
@@ -243,7 +243,7 @@ def check_celltype(
         background information of input data, by default None
     key : str, optional
         deg group key, by default "rank_genes_groups"
-    topgenes : int, optional
+    topnumber : int, optional
         select top gene for analysis, by default 15
     n_jobs : int | None, optional
         set multiple jobs for querying LLM, by default None
@@ -267,7 +267,7 @@ def check_celltype(
     -------
     None
     """
-    gene_dic = get_gene_dict(input, group, key, topgenes, rm_genes)
+    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
 
     if out is None:
         out_handle = sys.stdout
