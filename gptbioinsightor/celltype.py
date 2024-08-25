@@ -60,9 +60,9 @@ def get_celltype(
     group : str | Iterable, optional
          Which group, by default None
     base_url : str | None, optional
-        customized LLM API url by default None
+        customized LLM API url, by default None
     rm_genes : bool, optional
-        rm rb and mt genes, by default True
+        remove rb and mt genes, by default True
     sys_prompt : bool, optional
         use system prompt, by default True
 
@@ -172,9 +172,9 @@ def get_subtype(
     model : str | None, optional
         set a model based on LLM provider, by default None
     base_url : str | None, optional
-        customized LLM API url by default None
+        customized LLM API url, by default None
     rm_genes : bool, optional
-        rm rb and mt genes, by default True
+        remove rb and mt genes, by default True
     sys_prompt : bool, optional
         use system prompt, by default True
 
@@ -236,29 +236,32 @@ def check_celltype(
     Parameters
     ----------
     input : AnnData | dict
-        _description_
+        An AnnData object or geneset dict
     out : Path | str, optional
-        _description_, by default None
+        output path, by default None
     background : str, optional
-        _description_, by default None
+        background information of input data, by default None
     key : str, optional
-        _description_, by default "rank_genes_groups"
+        deg group key, by default "rank_genes_groups"
     topgenes : int, optional
-        _description_, by default 15
+        select top gene for analysis, by default 15
     n_jobs : int | None, optional
-        _description_, by default None
+        set multiple jobs for querying LLM, by default None
     provider : str, optional
-        _description_, by default "openai"
+        LLM provider, by default "openai"
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "moonshot" for kimi
     model : str | None, optional
-        _description_, by default None
+        set a model based on LLM provider, by default None
     group : str | Iterable[str] | None, optional
         _description_, by default None
     base_url : str | None, optional
-        _description_, by default None
+        customized LLM API url, by default None
     rm_genes : bool, optional
-        _description_, by default True
+        remove rb and mt genes, by default True
     sys_prompt : bool, optional
-        _description_, by default True
+        use system prompt, by default True
 
     Returns
     -------
