@@ -34,6 +34,44 @@ def depict_pathway(
     sys_prompt=True,
     lang: str = "en"
 ):
+    """
+    interpret GO term or pathway with actual biological context using LLM.
+
+    Parameters
+    ----------
+    input : dict
+        pathway input
+    out : Path | str, optional
+        output path, by default None
+    celltype_dic : dict, optional
+        celltype of pathway, by default None
+    background : str, optional
+        background information of pathway input, by default None
+    database : str, optional
+        pathway database, by default None
+    topnumber : int, optional
+        select top number  for analysis, by default 15
+    n_jobs : int | None, optional
+        set multiple jobs for querying LLM, by default None
+    provider : str, optional
+        LLM provider, by default "openai"
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "moonshot" for kimi
+    model : str | None, optional
+        set a model based on LLM provider, by default None
+    base_url : _type_, optional
+        customized LLM API url, by default None
+    sys_prompt : bool, optional
+        use system prompt, by default True
+    lang : str, optional
+        language setting, by default "en"
+
+    Returns
+    -------
+    _type_
+        None
+    """
     if out is None:
         out_handle = sys.stdout
     else:
