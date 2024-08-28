@@ -22,7 +22,7 @@ def get_marker_from_seurat(path: str | Path) -> dict:
         gene marker dict
     """
     df = pd.read_csv(path)
-    marker_dict = df.groupby('cluster')['gene'].agg(list).to_dict()
+    marker_dict = df.groupby('cluster', observed=True)['gene'].agg(list).to_dict()
     return marker_dict
 
 
@@ -30,7 +30,7 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     if isinstance(input, AnnData):
         deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
         gene_dic = {}
-        for gid, sdf in deg_df.groupby("group"):
+        for gid, sdf in deg_df.groupby("group", observed=True):
             gene_dic[gid] = sdf["names"].tolist()
     elif isinstance(input, dict):
         gene_dic = input.copy()
