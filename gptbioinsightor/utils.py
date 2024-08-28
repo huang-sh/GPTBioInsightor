@@ -36,7 +36,7 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
         gene_dic = input.copy()
     if rm_genes:
         for k in gene_dic.keys():
-            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS'))]
+            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS', "ENSG"))]
     for k in gene_dic.keys():
         gene_dic[k] = gene_dic[k][:topnumber]
     return gene_dic
