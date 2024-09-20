@@ -5,7 +5,8 @@ API_SOURCE = {
     "meta": "https://api.llama-api.com",
     "moonshot": "https://api.moonshot.cn/v1",
     "aliyun": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    "zhipuai": "https://open.bigmodel.cn/api/paas/v4/"  
+    "zhipuai": "https://open.bigmodel.cn/api/paas/v4/",
+    "siliconflow": "https://api.siliconflow.cn/v1"
 }
 
 LANG_DIC = {
