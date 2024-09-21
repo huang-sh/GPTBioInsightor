@@ -100,13 +100,11 @@ def get_celltype(
     celltype_ls = []
     for i in range(0, len(likely_res_ls), 5):
         part_likely_res = "".join(likely_res_ls[i:i + 5])
+        query_final_txt = FINAL_CELLTYPE_PROMPT.format(geneset_num=len(likely_res_ls[i:i + 5]), background=background)
         msgs = [
-            {"role": "user", "content": part_likely_res},
-            {"role": "user", "content": FINAL_CELLTYPE_PROMPT.format(geneset_num=len(likely_res_ls[i:i + 5]), background=background)}
+            {"role": "user", "content": part_likely_res + "\n" + query_final_txt}
         ]
-
         response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-        
         res_content = response.strip("```").strip("'''")
         print(res_content, file=most_handle)
         try:
