@@ -6,7 +6,8 @@ API_SOURCE = {
     "moonshot": "https://api.moonshot.cn/v1",
     "aliyun": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "zhipuai": "https://open.bigmodel.cn/api/paas/v4/",
-    "siliconflow": "https://api.siliconflow.cn/v1"
+    "siliconflow": "https://api.siliconflow.cn/v1",
+    "deepseek": "https://api.deepseek.com/v1"
 }
 
 LANG_DIC = {
