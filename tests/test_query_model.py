@@ -6,4 +6,4 @@ def test_aliyun_query_model(request):
     msg = [{"role": "user", "content": "Are you a LLM? Just answer yes or no."}]
     resp = query_model(msg, provider='aliyun', model=model, sys_prompt=False)
     if model in ["qwen2-72b-instruct", "gpt-4o"]:
-        assert "YES" in resp.choices[0].message.content.upper()
+        assert "YES" in resp.upper()

@@ -18,7 +18,7 @@ def _query_pathway(queryid, pathways, celltype, background, provider, model, bas
 
     msg = [{"role": "user", "content": text}]
     response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    return response.choices[0].message.content
+    return response
 
 def depict_pathway(
     input: dict, 

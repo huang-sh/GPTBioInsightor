@@ -16,7 +16,7 @@ def _query_celltype(genes, queryid, background, provider, model, base_url, sys_p
     text = LIKELY_CELLTYPE_PROMPT.format(setid=queryid, gene=",".join(genes), background=background)
     msg = [{"role": "user", "content": text}]
     response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    return response.choices[0].message.content
+    return response
 
 
 def get_celltype(
@@ -107,7 +107,7 @@ def get_celltype(
 
         response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
         
-        res_content = response.choices[0].message.content.strip("```").strip("'''")
+        res_content = response.strip("```").strip("'''")
         print(res_content, file=most_handle)
         try:
             type_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
@@ -202,7 +202,7 @@ def get_subtype(
     ]
     
     response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    res_content = response.choices[0].message.content.strip("```").strip("'''")
+    res_content = response.strip("```").strip("'''")
     print(res_content, file=out_handle)
     if out is not None: 
         out_handle.close()
@@ -287,7 +287,7 @@ def check_celltype(
     ]
     
     response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    res_content = response.choices[0].message.content.strip("```").strip("'''")
+    res_content = response.strip("```").strip("'''")
     print(res_content, file=out_handle)
     if out is not None: 
         out_handle.close()

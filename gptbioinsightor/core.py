@@ -27,5 +27,4 @@ def query_model(msgs, provider='openai', model='gpt-4o', base_url=None, sys_prom
         model=model,
         messages=sys_msg + msgs
     )
-    return response
-
+    return response.choices[0].message.content
