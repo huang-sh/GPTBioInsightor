@@ -1,7 +1,7 @@
-import os
 from openai import OpenAI
 from .prompt import SYSTEM_PROMPT
 from .constant import API_SOURCE
+from .utils import get_api_key
 
 
 class ApiKeyMissingError(Exception):
@@ -48,10 +48,7 @@ def anthropic_client(msgs, model, apikey, sys_prompt=''):
 
 
 def query_model(msgs, provider, model, base_url=None, sys_prompt=None):
-    API_KEY = os.getenv("API_KEY")
-    if API_KEY is None:
-        raise ApiKeyMissingError("Note: API key not found, please set API_KEY")
-    
+    API_KEY = get_api_key(provider)
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)
     else:

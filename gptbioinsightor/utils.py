@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import scanpy as sc
@@ -40,3 +41,13 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     for k in gene_dic.keys():
         gene_dic[k] = gene_dic[k][:topnumber]
     return gene_dic
+
+
+def get_api_key(provider=None):
+    if provider is not None:
+        API_KEY = os.getenv(f"{provider.upper()}_API_KEY")
+    else:
+        API_KEY = os.getenv("API_KEY")
+    if API_KEY is None:
+        raise ApiKeyMissingError(f"Note: API key not found, please set API_KEY or {provider.upper()}_API_KEY ")
+    return API_KEY
