@@ -30,8 +30,7 @@ def get_celltype(
     model: str | None = None,
     group: str | Iterable[str] | None = None,  
     base_url: str | None = None, 
-    rm_genes=True, 
-    sys_prompt=True
+    rm_genes=True
 ) -> dict:
     """\
     Annotating genesets using LLM, providing cell types, supporting gene markers, reasons, and potential cell state annotations.
@@ -63,14 +62,13 @@ def get_celltype(
         customized LLM API url, by default None
     rm_genes : bool, optional
         remove rb and mt genes, by default True
-    sys_prompt : bool, optional
-        use system prompt, by default True
 
     Returns
     -------
     dict
         a celltypes dict
     """
+    sys_prompt = SYSTEM_PROMPT
     gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
     if out is None:
         likely_handle, most_handle = sys.stdout, sys.stdout

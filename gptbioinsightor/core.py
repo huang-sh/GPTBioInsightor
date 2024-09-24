@@ -11,7 +11,7 @@ class ApiKeyMissingError(Exception):
         super().__init__(self.message)
 
 
-def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=True):
+def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None):
     if base_url is None:
         base_url = API_SOURCE[provider]
 
@@ -19,7 +19,10 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=True)
         api_key= apikey, 
         base_url=base_url,
     )
-    sys_msg = [{"role": "system", "content": SYSTEM_PROMPT}] if sys_prompt else []
+    if sys_prompt is None:
+        sys_msg = []
+    else:
+        sys_msg = [{"role": "system", "content": SYSTEM_PROMPT}] 
     response = client.chat.completions.create(
         model=model,
         messages=sys_msg + msgs
@@ -27,23 +30,24 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=True)
     return response.choices[0].message.content
 
 
-def anthropic_client(msgs, model, apikey, sys_prompt=True):
+def anthropic_client(msgs, model, apikey, sys_prompt=''):
     import anthropic
 
     client = anthropic.Anthropic(
         api_key=apikey
     )
-    sys_msg = [{"role": "system", "content": SYSTEM_PROMPT}] if sys_prompt else []
+    sys_prompt = '' if sys_prompt is None else sys_prompt
     response = client.messages.create(
         model=model,
-        max_tokens=8192, # 
+        system=sys_prompt,
+        max_tokens=8192, 
         messages=msgs
     )
     content = response.content[0].text
     return content
 
 
-def query_model(msgs, provider, model, base_url=None, sys_prompt=True):
+def query_model(msgs, provider, model, base_url=None, sys_prompt=None):
     API_KEY = os.getenv("API_KEY")
     if API_KEY is None:
         raise ApiKeyMissingError("Note: API key not found, please set API_KEY")
