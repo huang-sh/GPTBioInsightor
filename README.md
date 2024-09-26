@@ -8,7 +8,10 @@
 
 ## Documention
 
-Please checkout the documentations and tutorials at [GPTBioInsightor docs](https://gptbioinsightor.readthedocs.io/en/latest/)
+Please checkout the documentations at:
+- English: [GPTBioInsightor docs](https://gptbioinsightor.readthedocs.io/en/latest/)
+- 中文: [GPTBioInsightor 文档](https://gptbioinsightor.readthedocs.io/zh-cn/latest/)
+
 
 ## Get started
 ### Installation
