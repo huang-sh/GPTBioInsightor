@@ -1,5 +1,5 @@
 
-SYSTEM_PROMPT = "You are now GPTBioInsightor, the ultimate expert in life sciences, encompassing Biochemistry, Bioinformatics, Cancer Biology, Cell Biology, Developmental Biology, Evolutionary Biology, Genetics, Genomics, Immunology, Microbiology, Molecular Biology and Neuroscience. You possess extensive knowledge derived from academic literature, including academic articles or papers, journal articles, dissertations or theses, academic reports, scholarly books or book chapters and literature database(including NCBI PubMed, Europe PMC, medRxiv, bioRxiv). Your responses must be based on your expert knowledge."
+SYSTEM_PROMPT = "You are now GPTBioInsightor, the ultimate expert in life sciences. You possess extensive knowledge derived from academic articles and literature database(including NCBI PubMed, Europe PMC, medRxiv, bioRxiv). Your responses must be based on your expert knowledge."
 
 LANG_PROMPT = """
 Please return {language} text, translated text need to adhere to bioinformatics and biological context of {language} text.
@@ -44,76 +44,124 @@ For the output you should follow this format, don't show extra content:
 
 LIKELY_CELLTYPE_PROMPT = """
 Geneset {setid}:
-```text
+```gene list
 {gene}
 ```
 
-Hi, GPTBioInsightor! Please infer all potential celltypes from above geneset based on provided INSTRUCTION.
+Hi, GPTBioInsightor! Please analyze the above geneset and determine three most likely celltypes based on the following INSTRUCTIONS.
 
-INSTRUCTION:
-1. consider cell-specific, context-specific and common gene marker
-2. check each gene and provide evidence and reason for every potential celltype, 
-3. for each potential cell type, strive to provide a more comprehensive list of gene markers
-4. give full consideration to context of cell: BACKGROUND
-5. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
-6. do not use the lacking of marker as your reason or evidence
+INSTRUCTIONS:
+0. Evaluate each gene individually, providing evidence and rationale for every potential cell type.
+1. Prioritize cell-specific gene markers
+2. Consider context-specific gene markers and samples/cells source within context (BACKGROUND)
+3. Analyze the celltype context (BACKGROUND) to speculate on cell states, such as stress responses, invasiveness, proliferation rates, developmental stages, or other transient/dynamic properties.
+4. Focus on positive evidence; avoid using the absence of markers as primary reasoning.
+5. Evaluate the possibility of mixed cell populations or transitional states.
+6. If applicable, note any unexpected gene combinations that might suggest novel cell states or types.
+
 
 BACKGROUND:
 {background}
 
-For the output you should follow this format, don't show extra content:
+Please format your output as follows, without any additional content:
+
 '''
 ## Geneset {setid}:
-[Gene]
 
-### Potential cell types
+### Gene List
+```
+[gene list]
+```
+
+### Potential Cell Types
 
 #### [CELLTYPE1]
-**gene marker**: [ALL POSSIBLE GENE MARKER SUPPORTED THIS CELL TYPE]
-**reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
+**Gene Markers**:
+- cell-specific: [CELL-SPECIFIC GENE MARKERS]
+- context-specific: [CONTEXT-SPECIFIC GENE MARKERS]
+
+**Evidence**: [DETAILED EVIDENCE SUPPORTING THIS CELL TYPE]
+
+**Rationale**: [COMPREHENSIVE REASONING]
+
+**Potential Cell State**: [SPECULATED STATE BASED ON BACKGROUND]
 
 #### [CELLTYPE2]
-**gene marker**: [ALL POSSIBLE GENE MARKER SUPPORTED THIS CELL TYPE]
-**reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
+**Gene Markers**:
+- cell-specific: [CELL-SPECIFIC GENE MARKERS]
+- context-specific: [CONTEXT-SPECIFIC GENE MARKERS]
+
+**Evidence**: [DETAILED EVIDENCE SUPPORTING THIS CELL TYPE]
+
+**Rationale**: [COMPREHENSIVE REASONING]
+
+**Potential Cell State**: [SPECULATED STATE BASED ON BACKGROUND]
 
 #### [CELLTYPE3]
-**gene marker**: [ALL POSSIBLE GENE MARKER SUPPORTED THIS CELL TYPE]
-**reason**: [REASON]
-**cell state**: [POTENTIAL CELL STATE UNDER BACKGROUND]
-...
+**Gene Markers**:
+- cell-specific: [CELL-SPECIFIC GENE MARKERS]
+- context-specific: [CONTEXT-SPECIFIC GENE MARKERS]
 
+**Evidence**: [DETAILED EVIDENCE SUPPORTING THIS CELL TYPE]
+
+**Rationale**: [COMPREHENSIVE REASONING]
+
+**Potential Cell State**: [SPECULATED STATE BASED ON BACKGROUND]
+
+### Additional Observations
+[ANY NOTEWORTHY PATTERNS, UNUSUAL GENE COMBINATIONS, OR POTENTIAL NOVEL INSIGHTS]
 '''
 """
 
 
 FINAL_CELLTYPE_PROMPT = """
-Hi, GPTBioInsightor! Please determine the most likely celltype from multiple potential celltypes of each geneset.Your reasoning process must be based on INSTRUCTION.
+Hi, GPTBioInsightor! Please determine the most likely cell type for each gene set from the provided potential cell types. Your analysis should be based on the following INSTRUCTIONS and context(BACKGROUND) information.
 
-INSTRUCTION:
-1. you should provide evidence and reason for most likely celltype of each geneset
-2. give full consideration to context of cell: BACKGROUND, determine the most logical celltype
-4. consider the context of celltype: BACKGROUND; speculate the cell state or subtype of celltype, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
-5. consider cell-specific and context-specific gene markers first, then supported gene marker number
-6. don't use the lacking of marker as reason or evidence
-7. you can also propose a more specific cell type if you are sure it is better than provided celltypes
+INSTRUCTIONS:
+1. Provide comprehensive evidence and reasoning for the most likely cell type of each gene set wtih context(BACKGROUND).
+2. Prioritize cell-specific and context-specific gene markers in your analysis.
+3. Fully integrate the BACKGROUND information into your analysis to determine the most logical cell type.
+4. Speculate on the cell state, considering factors such as stress response, invasiveness, proliferation rate, developmental stage, or other transient/dynamic properties.
+5. Do not use the absence of markers as primary evidence; focus on positive evidence.
+6. Exclude cell types with clear negative markers present in the gene set.
+7. Evaluate the possibility of mixed cell populations or transitional states if the gene set suggests this.
+8. Note any unusual gene combinations or expression patterns that might indicate novel cell states or types.
 
 BACKGROUND:
 {background}. Above are {geneset_num} genesets and their potential celltypes, geneseach geneset is highly expressed relative to other gene sets..
 
 For the output you should follow this format:
 '''
-### [geneset id] : [ CELLTYPE ]  // just celltype name
-**gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
-**reason**: [REASON] // provide detailed evidence and reason for this CELLTYPE
-**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
+### [geneset id] : [ CELLTYPE NAME]
 
-### [geneset id] : [ CELLTYPE ] // just celltype name
-**gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
-**reason**: [REASON] // provide detailed evidence and reason for this CELLTYPE
-**cell state/subtype**: [POTENTIAL CELL STATE/SUBTYPE UNDER BACKGROUND]
-...
+**Gene Markers**:
+- cell-specific: [CELL-SPECIFIC GENE MARKERS]
+- context-specific: [CONTEXT-SPECIFIC GENE MARKERS]
+
+**Evidence and Reasoning**:
+1. [MAIN EVIDENCE POINT, like cell-specific marker]
+2. [SECONDARY EVIDENCE POINT, like context-specific marker ]
+3. [ADDITIONAL EVIDENCE POINTS AS NEEDED]
+
+**Cell State/Subtype**: [SPECULATED CELL STATE OR SUBTYPE BASED ON BACKGROUND]
+**Alternative Considerations**: [BRIEFLY MENTION OTHER CELL TYPES CONSIDERED AND WHY THEY WERE RULED OUT]
+
+
+### [geneset id] : [ CELLTYPE NAME ] 
+
+**Gene Markers**:
+- cell-specific: [CELL-SPECIFIC GENE MARKERS]
+- context-specific: [CONTEXT-SPECIFIC GENE MARKERS]
+
+**Evidence and Reasoning**:
+1. [MAIN EVIDENCE POINT, like cell-specific marker]
+2. [SECONDARY EVIDENCE POINT, like context-specific marker ]
+3. [ADDITIONAL EVIDENCE POINTS AS NEEDED]
+
+**Cell State/Subtype**: [SPECULATED CELL STATE OR SUBTYPE BASED ON BACKGROUND]
+**Alternative Considerations**: [BRIEFLY MENTION OTHER CELL TYPES CONSIDERED AND WHY THEY WERE RULED OUT]
+
+[REPEAT FOR EACH GENE SET]
 
 '''
 """
@@ -138,13 +186,13 @@ BACKGROUND:
 
 For the output you should follow this format:
 '''
-### [geneset id] : [ SUBTYPE ] 
+### [geneset id] : [ SUBTYPE NAME ] 
 ** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
 ** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
 **reason**: [REASON]
 **cell state**: [POTENTIAL CELL STATE]
 
-### [geneset id] : [ SUBTYPE ] 
+### [geneset id] : [ SUBTYPE NAME ] 
 ** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
 ** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
 **reason**: [REASON]
