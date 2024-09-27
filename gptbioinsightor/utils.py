@@ -43,11 +43,20 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     return gene_dic
 
 
+class ApiKeyMissingError(Exception):
+    """Exception raised for missing API_KEY."""
+    def __init__(self, message="API_KEY is missing"):
+        self.message = message
+        super().__init__(self.message)
+
+
 def get_api_key(provider=None):
     if provider is not None:
         API_KEY = os.getenv(f"{provider.upper()}_API_KEY")
+        if API_KEY is None:
+            API_KEY = os.getenv("API_KEY")
     else:
         API_KEY = os.getenv("API_KEY")
     if API_KEY is None:
-        raise ApiKeyMissingError(f"Note: API key not found, please set API_KEY or {provider.upper()}_API_KEY ")
+        raise ApiKeyMissingError(f"Note: API key not found, please set {provider.upper()}_API_KEY or API_KEY")
     return API_KEY
