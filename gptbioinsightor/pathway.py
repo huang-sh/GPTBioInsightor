@@ -31,7 +31,6 @@ def depict_pathway(
     provider: str = "openai", 
     model: str | None = None,
     base_url=None,
-    sys_prompt=True,
     lang: str = "en"
 ):
     """
@@ -81,7 +80,7 @@ def depict_pathway(
         n_jobs = min(os.cpu_count()//2, len(input))
 
     def _aux_func(item):
-        return _query_pathway(*item, background, provider, model, base_url, sys_prompt, lang)
+        return _query_pathway(*item, background, provider, model, base_url, SYSTEM_PROMPT, lang)
 
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
         iterables = [(k, v[:topnumber], celltype_dic[k]) for k, v in input.items()]

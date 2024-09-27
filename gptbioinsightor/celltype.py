@@ -136,8 +136,7 @@ def get_subtype(
     provider: str = "openai", 
     model: str | None = None,
     base_url: str | None = None, 
-    rm_genes=True, 
-    sys_prompt=True
+    rm_genes=True
 ) -> dict:
     """\
     Annotating cell subtypes using LLM, providing cell types, supporting gene markers, reasons, and potential cell state annotations.
@@ -171,8 +170,6 @@ def get_subtype(
         customized LLM API url, by default None
     rm_genes : bool, optional
         remove rb and mt genes, by default True
-    sys_prompt : bool, optional
-        use system prompt, by default True
 
     Returns
     -------
@@ -197,7 +194,7 @@ def get_subtype(
         {"role": "user", "content": SUBTYPE_PROMPT.format(celltype=celltype,genesets=genesets_txt, background=background)}
     ]
     
-    response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
+    response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=SYSTEM_PROMPT)
     res_content = response.strip("```").strip("'''")
     print(res_content, file=out_handle)
     if out is not None: 
@@ -223,8 +220,7 @@ def check_celltype(
     model: str | None = None,
     group: str | Iterable[str] | None = None,  
     base_url: str | None = None, 
-    rm_genes=True, 
-    sys_prompt=True
+    rm_genes=True
 ):
     """\
     Check the reason why genesets are annotated as these celltypes.
@@ -256,13 +252,12 @@ def check_celltype(
         customized LLM API url, by default None
     rm_genes : bool, optional
         remove rb and mt genes, by default True
-    sys_prompt : bool, optional
-        use system prompt, by default True
 
     Returns
     -------
     None
     """
+    sys_prompt = SYSTEM_PROMPT
     gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
 
     if out is None:
