@@ -7,7 +7,8 @@ API_SOURCE = {
     "aliyun": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "zhipuai": "https://open.bigmodel.cn/api/paas/v4/",
     "siliconflow": "https://api.siliconflow.cn/v1",
-    "deepseek": "https://api.deepseek.com/v1"
+    "deepseek": "https://api.deepseek.com/v1", 
+    "groq": "https://api.groq.com/openai/v1"
 }
 
 LANG_DIC = {
