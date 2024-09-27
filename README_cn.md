@@ -10,6 +10,15 @@
 
 详细文档见：[GPTBioInsightor中文文档](https://gptbioinsightor.readthedocs.io/zh-cn/latest/)
 
+## 支持 LLM 提供者
+ - openai
+ - anthropic
+ - groq
+ - aliyun
+ - zhipuai
+ - siliconflow
+ - deepseek
+
 ## 快速开始
 
 ### 安装
