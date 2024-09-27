@@ -12,6 +12,7 @@ repository = "https://github.com/huang-sh/GPTBioInsightor"
 python = "^3.9"
 openai = "^1.31.0"
 scanpy = ">=1.9.0"
+anthropic = "^0.33.0"
 
 
 [build-system]
