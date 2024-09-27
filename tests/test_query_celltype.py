@@ -5,7 +5,6 @@ import pytest
 
 
 base_url=None
-MODEL_LIST = pytest.MODEL_LIST
 
 def test_query_celltype(provider, model):
     genes = ["CD19", "MS4A1", "CD79A", "CD79", "CCR7"]

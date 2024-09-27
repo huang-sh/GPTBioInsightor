@@ -9,15 +9,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture()
 def provider(request):
-    value = request.config.getoption("--provider")    
-    API_KEY = os.getenv(f"{value.upper()}_API_KEY")
-    if API_KEY is None:
-        API_KEY = os.getenv("API_KEY")
-    os.environ['API_KEY'] = API_KEY
-    return value
-
-def pytest_configure(config):
-    pytest.MODEL_LIST = ["Qwen/Qwen2.5-72B-Instruct", "qwen2-72b-instruct", "gpt-4o"]
+    return request.config.getoption("--provider")
 
 
 @pytest.fixture()
@@ -28,4 +20,4 @@ def model(request):
 @pytest.fixture(autouse=True, scope="session")
 def set_global_variable():
     import builtins
-    builtins.MODEL_LS = ["qwen2-72b-instruct", "gpt-4o", "Qwen/Qwen2.5-72B-Instruct"]
+    builtins.MODEL_LIST = ["qwen2-72b-instruct", "gpt-4o", "Qwen/Qwen2.5-72B-Instruct"]
