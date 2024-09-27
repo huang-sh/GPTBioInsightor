@@ -15,7 +15,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     if sys_prompt is None:
         sys_msg = []
     else:
-        sys_msg = [{"role": "system", "content": SYSTEM_PROMPT}] 
+        sys_msg = [{"role": "system", "content": sys_prompt}] 
     response = client.chat.completions.create(
         model=model,
         messages=sys_msg + msgs,
