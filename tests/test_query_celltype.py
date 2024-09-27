@@ -21,7 +21,7 @@ def test_get_celltype(provider, model):
         "gs1": ["CD19", "MS4A1", "CD79A", "CD79", "CCR7"],
         "gs2": ["CD3", "CD3E", "CD8", "CD3D", "25CD" ]}
     background = "Human blood"
-    celltype_dic = get_celltype(gene_dic, background=background, out="test.md",
+    celltype_dic = get_celltype(gene_dic, background=background,
                     provider=provider, model=model,base_url=base_url)
     
     celltype_ls = list(celltype_dic.values())
