@@ -15,7 +15,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      API_KEY: ${{ secrets.API_KEY }}
+      API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
