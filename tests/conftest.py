@@ -16,6 +16,9 @@ def provider(request):
     os.environ['API_KEY'] = API_KEY
     return value
 
+def pytest_configure(config):
+    pytest.MODEL_LIST = ["Qwen/Qwen2.5-72B-Instruct", "qwen2-72b-instruct", "gpt-4o"]
+
 
 @pytest.fixture()
 def model(request):
