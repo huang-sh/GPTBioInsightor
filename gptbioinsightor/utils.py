@@ -60,3 +60,10 @@ def get_api_key(provider=None):
     if API_KEY is None:
         raise ApiKeyMissingError(f"Note: API key not found, please set {provider.upper()}_API_KEY or API_KEY")
     return API_KEY
+
+
+def get_celltype_name(text):
+    for line in text.split("\n"):
+        if line.startswith("####"):
+            return line.split(":")[1]
+            
