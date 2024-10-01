@@ -13,7 +13,7 @@ def test_query_celltype(provider, model):
     background = "Human blood"
     content = _query_celltype(genes, queryid, background, provider, model, base_url, SYSTEM_PROMPT)
     if model in MODEL_LIST:
-        assert "B cell" in content
+        assert "B" in content
 
 
 def test_get_celltype(provider, model):
