@@ -8,12 +8,12 @@ from collections.abc import Iterable
 from anndata import AnnData
 
 from .core import query_model
-from .utils import get_gene_dict
+from . import utils as ul
 from .prompt import *
 
 
 def _query_celltype(genes, queryid, background, provider, model, base_url, sys_prompt):
-    text = LIKELY_CELLTYPE_PROMPT.format(setid=queryid, gene=",".join(genes), background=background)
+    text = CELLTYPE_PROMPT.format(setid=queryid, gene=",".join(genes), background=background)
     msg = [{"role": "user", "content": text}]
     response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
     return response
@@ -69,17 +69,12 @@ def get_celltype(
         a celltypes dict
     """
     sys_prompt = SYSTEM_PROMPT
-    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
     if out is None:
-        likely_handle, most_handle = sys.stdout, sys.stdout
+        handle = sys.stdout
     else:
-        out = Path(out)
-        likely_path = out.with_suffix(f".likely{out.suffix}")
-        most_path = out.with_suffix(f".most{out.suffix}")
-        likely_handle = open(likely_path, "w")
-        most_handle = open(most_path, "w")
-        print("# All possible celltypes", file=likely_handle)
-        print("\n\n# Most Possible celltypes", file=most_handle)
+        handle = open(out, "w")
+        print("# CellType Analysis", file=handle)
         
     if n_jobs is None:
         n_jobs = min(os.cpu_count()//2, len(gene_dic))
@@ -87,34 +82,17 @@ def get_celltype(
     def _aux_func(item):
         return _query_celltype(item[1][:topnumber], item[0], background, provider, model, base_url, sys_prompt)
         
-    likely_res_ls = []
+    celltype_ls = []
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
         results = executor.map(_aux_func, gene_dic.items())
         for (gsid, genes), res in zip(gene_dic.items(), results):
-            res = res.strip("```").strip("'''")
-            print(res, file=likely_handle)
-            likely_res_ls.append(res)
-
-    celltype_ls = []
-    for i in range(0, len(likely_res_ls), 5):
-        part_likely_res = "".join(likely_res_ls[i:i + 5])
-        query_final_txt = FINAL_CELLTYPE_PROMPT.format(geneset_num=len(likely_res_ls[i:i + 5]), background=background)
-        msgs = [
-            {"role": "user", "content": part_likely_res + "\n" + query_final_txt}
-        ]
-        response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-        res_content = response.strip("```").strip("'''")
-        print(res_content, file=most_handle)
-        try:
-            type_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
-        except IndexError:
-            # low-capability model may not fully comply with the predefined output format
-            type_ls = [line.strip("#") for line in res_content.split("\n") if line.startswith("###")]
-        celltype_ls.extend(type_ls)
-
+            res = res.strip("```").strip("'''").strip()
+            print(res, file=handle)
+            ctn = ul.get_celltype_name(res)
+            celltype_ls.append(ctn)
+    
     if out is not None: 
-        likely_handle.close()
-        most_handle.close()
+        handle.close()
     
     if len(gene_dic.keys()) == len(celltype_ls):
         celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
@@ -176,7 +154,7 @@ def get_subtype(
     dict
         a cell subtypes dict
     """
-    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
 
     if out is None:
         out_handle = sys.stdout
@@ -258,7 +236,7 @@ def check_celltype(
     None
     """
     sys_prompt = SYSTEM_PROMPT
-    gene_dic = get_gene_dict(input, group, key, topnumber, rm_genes)
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
 
     if out is None:
         out_handle = sys.stdout
