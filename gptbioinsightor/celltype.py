@@ -12,8 +12,8 @@ from . import utils as ul
 from .prompt import *
 
 
-def _query_celltype(genes, queryid, background, provider, model, base_url, sys_prompt):
-    text = CELLTYPE_PROMPT.format(setid=queryid, gene=",".join(genes), background=background)
+def _query_celltype(queryid, gene_txt, cluster_num, background, provider, model, base_url, sys_prompt):
+    text = CELLTYPE_PROMPT.format(setid=queryid, gene=gene_txt, setnum=cluster_num,background=background)
     msg = [{"role": "user", "content": text}]
     response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
     return response
@@ -79,13 +79,14 @@ def get_celltype(
     if n_jobs is None:
         n_jobs = min(os.cpu_count()//2, len(gene_dic))
 
-    def _aux_func(item):
-        return _query_celltype(item[1][:topnumber], item[0], background, provider, model, base_url, sys_prompt)
+    def _aux_func(args):
+        gene_txt = "\n".join([f"cluster {k}: {','.join(genes[:topnumber])}" for k,genes in args[1].items()])
+        return _query_celltype(args[0], gene_txt, len(args[1]), background, provider, model, base_url, sys_prompt)
         
     celltype_ls = []
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-        results = executor.map(_aux_func, gene_dic.items())
-        for (gsid, genes), res in zip(gene_dic.items(), results):
+        results = executor.map(_aux_func, [(k, gene_dic) for k in gene_dic.keys()])
+        for gsid, res in zip(gene_dic.values(), results):
             res = res.strip("```").strip("'''").strip()
             print(res, file=handle)
             ctn = ul.get_celltype_name(res)
