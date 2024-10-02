@@ -11,7 +11,8 @@ def test_query_celltype(provider, model):
     genes = ["CD19", "MS4A1", "CD79A", "CD79", "CCR7"]
     queryid = "TEST_GENE_SET"
     background = "Human blood"
-    content = _query_celltype(genes, queryid, background, provider, model, base_url, SYSTEM_PROMPT)
+    gene_txt = f"cluster 0: {','.join(genes)}"
+    content = _query_celltype(queryid, genes, 1, background, provider, model, base_url, SYSTEM_PROMPT)
     if model in MODEL_LIST:
         assert "B" in content
 
