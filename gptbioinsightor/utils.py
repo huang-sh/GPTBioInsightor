@@ -65,5 +65,9 @@ def get_api_key(provider=None):
 def get_celltype_name(text):
     for line in text.split("\n"):
         if line.startswith("####"):
-            return line.split(":")[1]
+            try:
+                return line.split(":")[1]
+            except IndexError:
+                print("LLM doesn't output result accroding predefined format")
+                
             
