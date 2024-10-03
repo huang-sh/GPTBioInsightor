@@ -33,10 +33,11 @@ def anthropic_client(msgs, model, apikey, sys_prompt=''):
         api_key=apikey
     )
     sys_prompt = '' if sys_prompt is None else sys_prompt
+    max_tokens = 8192 if model == 'claude-3-5-sonnet-20240620' else 4096
     response = client.messages.create(
         model=model,
         system=sys_prompt,
-        max_tokens=8192, 
+        max_tokens=max_tokens, 
         messages=msgs
     )
     content = response.content[0].text
