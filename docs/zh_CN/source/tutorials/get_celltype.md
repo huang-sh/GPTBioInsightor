@@ -133,9 +133,9 @@ sc.pl.umap(adata, color=["leiden", "celltype_manual", "celltypes_gbi"], legend_l
 ## cluster geneset 0
 
 ### Gene List
-\```
+'''
 LDHB, LTB, RGCC, IL32, NOSIP, CD3D, CD3E, TMEM123, VIM, TMEM66, FYB, JUNB, CCR7, CD27, MYL12A
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: T Cells (likely CD4+ T cells)
@@ -166,9 +166,9 @@ LDHB, LTB, RGCC, IL32, NOSIP, CD3D, CD3E, TMEM123, VIM, TMEM66, FYB, JUNB, CCR7,
 ## cluster geneset 1
 
 ### Gene List
-\```
+'''
 CD79A,HLA-DRA,MS4A1,CD79B,CD74,HLA-DPB1,HLA-DRB1,HLA-DQA1,CD37,HLA-DPA1,HLA-DQB1,LINC00926,LTB,TCL1A,HLA-DRB5
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: B cells
@@ -208,9 +208,9 @@ CD79A,HLA-DRA,MS4A1,CD79B,CD74,HLA-DPB1,HLA-DRB1,HLA-DQA1,CD37,HLA-DPA1,HLA-DQB1
 ## cluster geneset 2
 
 ### Gene List
-\```
+'''
 FCGR3A, LST1, MT2A, FCER1G, IFITM2, AIF1, LILRA3, RHOC, IFITM3, STXBP2, PSAP, SAT1, NINJ1, MS4A7, ABI3
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: Monocytes
@@ -266,9 +266,9 @@ FCGR3A, LST1, MT2A, FCER1G, IFITM2, AIF1, LILRA3, RHOC, IFITM3, STXBP2, PSAP, SA
 ## cluster geneset 3
 
 ### Gene List
-\```
+'''
 GNLY, GZMB, FGFBP2, NKG7, PRF1, CTSW, TYROBP, FCGR3A, SPON2, XCL2, FCER1G, GZMA, HOPX, ID2, PLAC8
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: NK Cells
@@ -299,9 +299,9 @@ GNLY, GZMB, FGFBP2, NKG7, PRF1, CTSW, TYROBP, FCGR3A, SPON2, XCL2, FCER1G, GZMA,
 ## cluster geneset 4
 
 ### Gene List
-\```
+'''
 CCL5, GZMK, NKG7, CST7, CD3D, GZMA, CTSW, CD8A, KLRG1, GZMH, IL32, LYAR, S100A6, NCR3, HCST
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: Cytotoxic T Cells (CD8+ T Cells)
@@ -341,9 +341,9 @@ CCL5, GZMK, NKG7, CST7, CD3D, GZMA, CTSW, CD8A, KLRG1, GZMH, IL32, LYAR, S100A6,
 ## cluster geneset 5
 
 ### Gene List
-\```
+'''
 S100A8, LYZ, S100A9, LGALS2, FCN1, CD14, GSTP1, FTL, MS4A6A, CFD, NPC2, TYROBP, GRN, APOBEC3A, GPX1
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: Monocytes
@@ -374,9 +374,9 @@ S100A8, LYZ, S100A9, LGALS2, FCN1, CD14, GSTP1, FTL, MS4A6A, CFD, NPC2, TYROBP, 
 ## cluster geneset 6
 
 ### Gene List
-\```
+'''
 FCER1A, HLA-DQA1, HLA-DPB1, CLEC10A, HLA-DQB1, HLA-DRA, HLA-DPA1, CST3, LYZ, HLA-DRB1, CD74, HLA-DQA2, HLA-DMA, HLA-DRB5, SRSF7
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: Dendritic Cells (DCs)
@@ -407,9 +407,9 @@ FCER1A, HLA-DQA1, HLA-DPB1, CLEC10A, HLA-DQB1, HLA-DRA, HLA-DPA1, CST3, LYZ, HLA
 ## cluster geneset 7
 
 ### Gene List
-\```
+'''
 PPBP, PF4, GNG11, GPX1, SDPR, NRGN, CCL5, SPARC, HIST1H2AC, TPM4, CLU, TUBB1, RGS10, GP9, TAGLN2
-\```
+'''
 
 ### Celltype Prediction
 #### Optimal Celltype: Platelets
