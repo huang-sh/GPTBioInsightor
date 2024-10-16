@@ -52,12 +52,12 @@ Context:
 {background}. Here are {setnum} genesets for {setnum} different cell clusters up-regulated DEGs. 
 '''
 
-Hi, GPTBioInsightor! Please analyze Input and predict the celltypes of geneset cluster {setid} based on the following INSTRUCTIONS.
+Hi, GPTBioInsightor! Please analyze Input geneset and predict the celltypes of geneset cluster {setid} based on the following INSTRUCTIONS.
 
 INSTRUCTIONS:
-0. Analyze each gene in cluster {setid}, check cell-specific and context-specific markers
+0. Analyze each gene in Geneset, check cell-specific, context-specific and common gene markers
 1. prioritize single Gold Standard marker or gene marker combinations for celltype prediction
-2. Consider the context of Input for celltype prediction; e.g. tissue, disease, etc.
+2. give full consideration to the Input Context for celltype prediction, e.g. common celltypes in tissue, disease, etc.
 3. Integrate Context of Input to speculate on some novel insights 
 4. Focus on positive evidence, avoid using marker absence as primary reasoning.
 5. Exclude celltypes with clear negative markers in the geneset.
