@@ -43,9 +43,9 @@ os.environ['API_KEY'] = "sk-***"
 background = "Cells are PBMCs from a Healthy Donor" 
 
 # make sure you have perform DEG analysis for adata,like: sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")
-# Here, use qwen2-72b-instruct of Aliyun, but you also can use openai gpt-4o
+# Here, use qwen-max-latest of Aliyun, but you also can use openai gpt-4o
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.qwen.celltype.md", key="logreg_deg", 
+                       out="gbi.qwen.celltype.md", 
                        topnumber=15,provider="aliyun", 
                        n_jobs=4,model="qwen-max-latest")
 # {'0': 'CD4+ T Helper Cells',
