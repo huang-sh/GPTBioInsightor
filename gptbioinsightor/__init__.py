@@ -4,4 +4,4 @@ from .core import query_model
 from .utils import get_marker_from_seurat
 
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
