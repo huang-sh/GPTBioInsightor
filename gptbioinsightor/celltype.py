@@ -70,11 +70,8 @@ def get_celltype(
     """
     sys_prompt = SYSTEM_PROMPT
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
-    if out is None:
-        handle = sys.stdout
-    else:
-        handle = open(out, "w")
-        print("# CellType Analysis", file=handle)
+    ot = ul.Outputor(out)
+    ot.write("# CellType Analysis")
         
     if n_jobs is None:
         n_jobs = min(os.cpu_count()//2, len(gene_dic))
@@ -88,13 +85,10 @@ def get_celltype(
         results = executor.map(_aux_func, [(k, gene_dic) for k in gene_dic.keys()])
         for gsid, res in zip(gene_dic.values(), results):
             res = res.strip("```").strip("'''").strip()
-            print(res, file=handle)
+            ot.write(res)
             ctn = ul.get_celltype_name(res)
             celltype_ls.append(ctn)
-    
-    if out is not None: 
-        handle.close()
-    
+    ot.close()
     if len(gene_dic.keys()) == len(celltype_ls):
         celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
     else: # low-capability model may not get correct output
@@ -156,12 +150,8 @@ def get_subtype(
         a cell subtypes dict
     """
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
-
-    if out is None:
-        out_handle = sys.stdout
-    else:
-        out_handle = open(out, "w")
-        print("# Cell Subtype", file=out_handle)
+    ot = ul.Outputor(out)
+    ot.write("# Cell Subtype")
 
     genesets = [] 
     for k in gene_dic.keys():
@@ -175,9 +165,8 @@ def get_subtype(
     
     response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=SYSTEM_PROMPT)
     res_content = response.strip("```").strip("'''")
-    print(res_content, file=out_handle)
-    if out is not None: 
-        out_handle.close()
+    ot.write(res_content)
+    ot.close()
     subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
 
     if len(gene_dic.keys()) == len(subtype_ls):
@@ -239,11 +228,8 @@ def check_celltype(
     sys_prompt = SYSTEM_PROMPT
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
 
-    if out is None:
-        out_handle = sys.stdout
-    else:
-        out_handle = open(out, "w")
-        print("# CellType checking", file=out_handle)
+    ot = ul.Outputor(out)
+    ot.write("# CellType checking")
 
     genesets = [] 
     for k in gene_dic.keys():
@@ -258,6 +244,5 @@ def check_celltype(
     
     response = query_model(msgs, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
     res_content = response.strip("```").strip("'''")
-    print(res_content, file=out_handle)
-    if out is not None: 
-        out_handle.close()
+    ot.write(res_content)
+    ot.close()

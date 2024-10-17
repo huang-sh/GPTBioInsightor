@@ -5,6 +5,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from .prompt import *
+from . import utils as ul
 from .core import query_model
 from .constant import LANG_DIC
 
@@ -71,11 +72,9 @@ def depict_pathway(
     _type_
         None
     """
-    if out is None:
-        out_handle = sys.stdout
-    else:
-        out_handle = open(out, "w")
-        print("# Pathway summary", file=out_handle)
+    ot = ul.Outputor(out)
+    ot.write("# Pathway summary")
+
     if n_jobs is None:
         n_jobs = min(os.cpu_count()//2, len(input))
 
@@ -87,6 +86,5 @@ def depict_pathway(
         results = executor.map(_aux_func, iterables)
         for res in results:
             res = res.strip("```").strip("'''")
-            print(res, file=out_handle)
-    if out is not None: 
-        out_handle.close()
+            ot.write(res)
+    ot.close()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import scanpy as sc
@@ -69,5 +70,19 @@ def get_celltype_name(text):
                 return line.split(":")[1]
             except IndexError:
                 print("LLM doesn't output result accroding predefined format")
-                
+         
+
+class Outputor:
+    def __init__(self, path: str | Path | None = None) -> None:
+        self.path = path
+        if self.path is None:
+            self.handle = sys.stdout
+        else:
+            self.handle = open(self.path, "w", encoding="utf-8")
             
+    def write(self, text):
+        print(text, file=self.handle)
+    
+    def close(self):
+        if self.path is not None: 
+            self.handle.close()
