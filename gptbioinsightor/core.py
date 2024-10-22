@@ -21,7 +21,6 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
         messages=sys_msg + msgs,
         tools = tools,
         top_p= 0.7,
-        temperature= 0.95
     )
     return response.choices[0].message.content
 
