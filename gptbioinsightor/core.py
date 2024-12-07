@@ -2,6 +2,7 @@ from openai import OpenAI
 from .prompt import SYSTEM_PROMPT
 from .constant import API_SOURCE
 from .utils import get_api_key
+from .exception import APIStatusError, ApiBalanceLow
 
 
 def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None, tools=None):
@@ -15,13 +16,17 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     if sys_prompt is None:
         sys_msg = []
     else:
-        sys_msg = [{"role": "system", "content": sys_prompt}] 
-    response = client.chat.completions.create(
-        model=model,
-        messages=sys_msg + msgs,
-        tools = tools,
-        top_p= 0.7,
-    )
+        sys_msg = [{"role": "system", "content": sys_prompt}]
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=sys_msg + msgs,
+            tools = tools,
+            top_p= 0.7,
+        )
+    except APIStatusError as e:
+        raise ApiBalanceLow(provider, e.status_code, e.message)
+        
     return response.choices[0].message.content
 
 

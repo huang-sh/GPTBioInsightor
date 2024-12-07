@@ -8,6 +8,8 @@ import scanpy as sc
 import pandas as pd
 from anndata import AnnData
 
+from .exception import ApiKeyMissingError
+
 
 def get_marker_from_seurat(path: str | Path) -> dict:
     """\
@@ -42,13 +44,6 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     for k in gene_dic.keys():
         gene_dic[k] = gene_dic[k][:topnumber]
     return gene_dic
-
-
-class ApiKeyMissingError(Exception):
-    """Exception raised for missing API_KEY."""
-    def __init__(self, message="API_KEY is missing"):
-        self.message = message
-        super().__init__(self.message)
 
 
 def get_api_key(provider=None):
