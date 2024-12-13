@@ -8,7 +8,8 @@ API_SOURCE = {
     "zhipuai": "https://open.bigmodel.cn/api/paas/v4/",
     "siliconflow": "https://api.siliconflow.cn/v1",
     "deepseek": "https://api.deepseek.com/v1", 
-    "groq": "https://api.groq.com/openai/v1"
+    "groq": "https://api.groq.com/openai/v1",
+    "openrouter": "https://openrouter.ai/api/v1"
 }
 
 LANG_DIC = {
