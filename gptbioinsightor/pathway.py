@@ -29,7 +29,7 @@ def depict_pathway(
     database: str = None, 
     topnumber: int = 15, 
     n_jobs: int | None = None, 
-    provider: str = "openai", 
+    provider: str | None = None,
     model: str | None = None,
     base_url=None,
     lang: str = "en"
