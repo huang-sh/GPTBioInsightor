@@ -1,7 +1,7 @@
 from openai import OpenAI
 from .prompt import SYSTEM_PROMPT
 from .constant import API_SOURCE
-from .utils import get_api_key
+from .utils import get_api_key, parse_model
 from .exception import APIStatusError, ApiBalanceLow
 
 
@@ -49,6 +49,7 @@ def anthropic_client(msgs, model, apikey, sys_prompt=''):
 
 
 def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=None):
+    provider, model = parse_model(provider, model)
     API_KEY = get_api_key(provider)
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)

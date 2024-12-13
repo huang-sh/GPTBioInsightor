@@ -6,6 +6,11 @@ def test_get_marker_from_seurat():
     assert list(gene_marker.keys()) == [0,1,2,3,4,5,6,7,8]
 
 
+def test_parse_model():
+    assert ("openai", "gpt-4o") == utils.parse_model("openai", "gpt-4o")
+    assert ("openai", "gpt-4o") == utils.parse_model(None, "openai:gpt-4o")
+    assert ("openrouter", "openai/gpt-4o:beta") == utils.parse_model(None, "openrouter:openai/gpt-4o:beta")
+
 def test_get_gene_dict():
     topnumber = 15
     rm_gene = True 

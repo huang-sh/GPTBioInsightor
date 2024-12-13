@@ -46,6 +46,14 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     return gene_dic
 
 
+def parse_model(provider, model):
+    if provider is None:
+        items = model.split(":")
+        provider = items[0]
+        model = ":".join(items[1:])
+    return provider, model
+
+
 def get_api_key(provider=None):
     if provider is not None:
         API_KEY = os.getenv(f"{provider.upper()}_API_KEY")
