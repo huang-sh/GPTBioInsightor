@@ -53,8 +53,8 @@ def depict_pathway(
         select top number  for analysis, by default 15
     n_jobs : int | None, optional
         set multiple jobs for querying LLM, by default None
-    provider : str, optional
-        LLM provider, by default "openai"
+    provider : str | None, optional
+        LLM provider, by default None
         "openai" for chatgpt
         "aliyun" for qwen
         "moonshot" for kimi
