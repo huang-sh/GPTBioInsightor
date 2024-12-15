@@ -20,4 +20,4 @@ class ApiBalanceLow(APIStatusError):
             #TODO add other provider status code handling
             self.message = message
             # self.message = f"{provider} does not have enough quota"
-        super().__init__(message=self.message, status_code=status_code)
+        super().__init__(message=self.message)
