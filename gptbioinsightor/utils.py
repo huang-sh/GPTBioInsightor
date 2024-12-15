@@ -93,6 +93,9 @@ class Outputor:
 
 
 def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sys_prompt):
+    from .core import query_model
+    from .prompt import PRE_CELLTYPE_PROMPT
+    from concurrent.futures import ThreadPoolExecutor
     text = PRE_CELLTYPE_PROMPT.format(number=cluster_num, background=background)
     msg = [{"role": "user", "content": text}]
     from functools import partial
