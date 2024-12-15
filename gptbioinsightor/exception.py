@@ -12,9 +12,9 @@ class ApiBalanceLow(APIStatusError):
     """Exception raised for low balance."""
 
     def __init__(self, provider, message, response, body):
-        if provider == "deepseek" and status_code == 402:
+        if provider == "deepseek" and response.status_code == 402:
             self.message = "DeepSeek does not have enough quota"
-        elif provider == "openai" and status_code == 429:
+        elif provider == "openai" and response.status_code == 429:
             self.message = "OpenAI does not have enough quota"
         else:
             #TODO add other provider status code handling
