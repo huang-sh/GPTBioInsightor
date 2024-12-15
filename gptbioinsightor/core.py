@@ -25,7 +25,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
             top_p= 0.7,
         )
     except APIStatusError as e:
-        raise ApiBalanceLow(provider, e.status_code, e.message)
+        raise ApiBalanceLow(provider, e.message, e.response, e.body)
         
     return response.choices[0].message.content
 
