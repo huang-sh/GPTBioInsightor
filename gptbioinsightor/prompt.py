@@ -55,14 +55,16 @@ Context:
 Hi, GPTBioInsightor! Please analyze Input geneset and predict the celltypes of geneset cluster {setid} based on the following INSTRUCTIONS.
 
 INSTRUCTIONS:
-0. Analyze each gene in Geneset, check cell-specific, context-specific and common gene markers
-1. prioritize single Gold Standard marker or gene marker combinations for celltype prediction
-2. give full consideration to the Input Context for celltype prediction, e.g. common celltypes in tissue, disease, etc.
+0. Consider previous mentioned celltypes and cell states first.
+1. Prioritize Gold Standard markers or marker combinations for predictions.
+2. Use the input context (e.g., common cell types, tissues, diseases) to guide predictions.
 3. Integrate Context of Input to speculate on some novel insights 
 4. Focus on positive evidence, avoid using marker absence as primary reasoning.
 5. Exclude celltypes with clear negative markers in the geneset.
-6. Consider each cluster has different celltype prediction in most time, exclude celltypes represented by ohter cluster gene markers. 
-7. Consider one Optimal celltypes and two alternative celltypes.
+6. Ensure distinct predictions for each cluster; avoid overlap with other clusters in most time.
+7. Provide one **Optimal Cell Type** and two alternatives.
+8. Distinguish specialized cell states from similar characteristic cell types, refer to previous simliar celltype and cell state.
+
 
 Output Format:, without any additional prompt or string:
 '''
@@ -78,26 +80,28 @@ Output Format:, without any additional prompt or string:
 **Key Markers**:
 - Cell-specific: [CELL-SPECIFIC MARKERS]
 - Context-specific: [CONTEXT-SPECIFIC MARKERS]
+- Cell-state-specific: [STATE-SPECIFIC MARKERS] // show it if possible
 
 **Evidence and Reasoning**
 - [PRIMARY EVIDENCE]
 - [SECONDARY EVIDENCE]
 - [ADDITIONAL EVIDENCE AS NEEDED]
 
-**Validation**: [OTHER Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE OPTIMAL CELLTYPE]
+**Validation**: [Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE OPTIMAL CELLTYPE]
 
 #### Alternative Considerations
 - Alternative celltype1
     - [WHY Alternative? Key MARKERS, Evidence and Reasoning]
-    - [OTHER Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE Alternative celltype1]
+    - Cell state
+    - [Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE Alternative celltype1]
 
 - Alternative celltype2
     - [WHY Alternative? Key MARKERS, Evidence and Reasoning]
-    - [OTHER Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE Alternative celltype2]
+    - Cell state
+    - [Gold Standard MARKERS(NOT IN Geneset {setid}) TO VALIDATE THE Alternative celltype2]
 
 ### Novel Insights
 - [NOTEWORTHY PATTERNS]
-- [CELL STATE]
 - [POTENTIAL NEW FINDINGS]
 '''
 """
@@ -167,4 +171,10 @@ For the output you should follow this format:
 ...
 
 '''
+"""
+
+
+
+PRE_CELLTYPE_PROMPT = """In single-cell data analysis, the scRNA-Seq data is derived from the background of '{background}'.
+Please list the {number} most likely and common cell types to be identified, if possible, also include potential variations in cell states for each cell type within the given background.
 """

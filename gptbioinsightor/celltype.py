@@ -12,9 +12,11 @@ from . import utils as ul
 from .prompt import *
 
 
-def _query_celltype(queryid, gene_txt, cluster_num, background, provider, model, base_url, sys_prompt):
+def _query_celltype(queryid, gene_txt, cluster_num, background, provider, model, base_url, sys_prompt, history=None):
     text = CELLTYPE_PROMPT.format(setid=queryid, gene=gene_txt, setnum=cluster_num,background=background)
     msg = [{"role": "user", "content": text}]
+    if history is not None: 
+        msg = history + msg
     response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
     return response
 
@@ -72,14 +74,20 @@ def get_celltype(
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
     ot = ul.Outputor(out)
     ot.write("# CellType Analysis")
-        
+    chat_msg = ul.get_pre_celltype_chat(len(gene_dic), background, provider, model, base_url, sys_prompt)
+    ot.write("## Potential CellType")
+    ot.write(f"In scRNA-Seq data background of '{background}', the following Potential CellType to be identified:")
+    ot.write(chat_msg[-1]["content"])
+    for i in chat_msg:
+        print(i["content"])
+
     if n_jobs is None:
         n_jobs = min(os.cpu_count()//2, len(gene_dic))
 
     def _aux_func(args):
         gene_txt = "\n".join([f"cluster {k}: {','.join(genes[:topnumber])}" for k,genes in args[1].items()])
-        return _query_celltype(args[0], gene_txt, len(args[1]), background, provider, model, base_url, sys_prompt)
-        
+        return _query_celltype(args[0], gene_txt, len(args[1]), background, provider, model, base_url, sys_prompt, history=chat_msg)
+
     celltype_ls = []
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
         results = executor.map(_aux_func, [(k, gene_dic) for k in gene_dic.keys()])

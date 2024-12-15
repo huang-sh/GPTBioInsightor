@@ -89,3 +89,45 @@ class Outputor:
     def close(self):
         if self.path is not None: 
             self.handle.close()
+
+
+
+def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sys_prompt):
+    text = PRE_CELLTYPE_PROMPT.format(number=cluster_num, background=background)
+    msg = [{"role": "user", "content": text}]
+    from functools import partial
+    _aux_query = partial(query_model, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
+    
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        results = list(executor.map(_aux_query , [msg, msg, msg]))
+    new_text = f"""Please integrate the three list into one list,
+    list1:
+    '''
+    {results[0]}
+    '''
+    list2:
+    '''
+    {results[1]}
+    '''
+    list3:
+    '''
+    {results[2]}
+    '''
+    please provide result using follow format:
+    ```
+    celltype1: classical marker
+        - cell state1: specifc gene markers, characteristic
+        - cell state2: specifc gene markers, characteristic
+    celltype2: classical marker
+        - cell state1: specifc gene markers, characteristic
+        - cell state2: specifc gene markers, characteristic
+    celltype3: classical marker
+        - cell state1: specifc gene markers, characteristic
+        - cell state2: specifc gene markers, characteristic
+    ......
+    ```
+    """
+    msg = [{"role": "user", "content": new_text}]
+    response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
+    chat_msg = [{"role": "user", "content": text}, {"role": "assistant", "content": response}]
+    return chat_msg
