@@ -78,7 +78,11 @@ Performing cell type annotation using GPTBioinsightor:
 ```python
 # set LLM API KEY
 import os
+
 os.environ['API_KEY'] = "sk-***"
+## or API KEY for anthropic
+os.environ['ANTHROPIC_API_KEY'] = "sk-***"
+
 
 
 import gptbioinsightor as gbi
@@ -86,12 +90,12 @@ import gptbioinsightor as gbi
 # set background information of data
 background = "Cells are PBMCs from a Healthy Donor" 
 
-# here, I use Aliyun qwen2-72b-instruct
-# you can set openai gpt-4o
+# Here, use claude-3-5-sonnet-20241022 of anthropic, 
+# but you also can use other supported LLM provider.
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.qwen.celltype.md", key="logreg_deg", 
-                       topnumber=15,provider="aliyun", 
-                       n_jobs=4,model="qwen-max-latest")
+                       out="gbi.claude.celltype.md", key="logreg_deg", 
+                       topnumber=15,provider="anthropic", 
+                       n_jobs=4,model="claude-3-5-sonnet-20241022")
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',
 #  '2': 'Monocytes/Macrophages',

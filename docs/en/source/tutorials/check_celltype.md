@@ -21,7 +21,7 @@ cg_dic = {
 }
 
 
-res_s = gbi.check_celltype(cg_dic, background=background, topnumber=20, provider="aliyun", model="qwen2-72b-instruct")
+res_s = gbi.check_celltype(cg_dic, background=background, topnumber=20, provider="anthropic", model="claude-3-5-sonnet-20241022")
 res_s
 
 ```

@@ -8,7 +8,7 @@ Performing cell subtype annotation using GPTBioinsightor:
 ```python
 from anndata import AnnData
 background = "Cells are Monocytes/Macrophages cells from a Healthy Donor" 
-rsub = gbi.get_subtype(adata, group=["2","5"], key="logreg_deg" ,background=background, celltype="Monocytes/Macrophages", out="Subtype.md", topnumber=25, provider="aliyun", model="qwen2-72b-instruct")
+rsub = gbi.get_subtype(adata, group=["2","5"], key="logreg_deg" ,background=background, celltype="Monocytes/Macrophages", out="Subtype.md", topnumber=25, provider="anthropic", model="claude-3-5-sonnet-20241022")
 rsub
 # {'2': 'Classical Monocytes', '5': 'Non-classical Monocytes'}
 ```

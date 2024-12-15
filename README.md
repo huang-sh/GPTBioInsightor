@@ -37,17 +37,21 @@ import gptbioinsightor as gbi
 
 ### Set API KEY of LLM 
 import os
+
 os.environ['API_KEY'] = "sk-***"
+## or API KEY for anthropic
+os.environ['ANTHROPIC_API_KEY'] = "sk-***"
+
 
 # set background of your data
-background = "Cells are PBMCs from a Healthy Donor" 
+background = "Human Healthy Donor PBMCs" 
 
 # make sure you have perform DEG analysis for adata,like: sc.tl.rank_genes_groups(adata, "leiden", method="wilcoxon")
-# Here, use qwen-max-latest of Aliyun, but you also can use openai gpt-4o
+# Here, use claude-3-5-sonnet-20241022 of anthropic, but you also can use other supported LLM provider.
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.qwen.celltype.md", 
-                       topnumber=15,provider="aliyun", 
-                       n_jobs=4,model="qwen-max-latest")
+                       out="gbi.claude.celltype.md", 
+                       topnumber=15,provider="anthropic", 
+                       n_jobs=4,model="claude-3-5-sonnet-20241022")
 # {'0': 'CD4+ T Helper Cells',
 #  '1': 'B Cells',
 #  '2': 'Monocytes/Macrophages',

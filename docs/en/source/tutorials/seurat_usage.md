@@ -66,9 +66,10 @@ result_dict = gbi.get_marker_from_seurat("data/pbmc.markers.fil.csv")
 # set background information of data
 background = "Cells are PBMCs from a Healthy Donor" 
 
-# here, I use Aliyun qwen2-72b-instruct
-# you can set openai gpt-4o
-res = gbi.get_celltype(result_dict, background=background, out="Seurat.qwen.celltype.md", topnumber=20, provider="aliyun", model="qwen2-72b-instruct")
+
+# Here, use claude-3-5-sonnet-20241022 of anthropic, 
+# but you also can use other supported LLM provider.
+res = gbi.get_celltype(result_dict, background=background, out="Seurat.claude.celltype.md", topnumber=20, provider="anthropic", model="claude-3-5-sonnet-20241022")
 res
 # {0: 'T lymphocytes (T cells)',
 #  1: 'Monocytes/Macrophages',
