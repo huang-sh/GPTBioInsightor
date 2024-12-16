@@ -13,11 +13,14 @@
 ## 支持 LLM 提供者
  - openai
  - anthropic
+ - openrouter
  - groq
  - aliyun
  - zhipuai
  - siliconflow
  - deepseek
+ - perplexity
+
 
 ## 快速开始
 

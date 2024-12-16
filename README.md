@@ -15,11 +15,13 @@ Please checkout the documentations at:
 ## Supported LLM provider
  - openai
  - anthropic
+ - openrouter
  - groq
  - aliyun
  - zhipuai
  - siliconflow
  - deepseek
+ - perplexity
 
 ## Get started
 ### Installation
