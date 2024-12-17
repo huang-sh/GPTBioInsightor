@@ -66,6 +66,23 @@ def get_api_key(provider=None):
     return API_KEY
 
 
+def set_api_key(api_key: str, provider: str | None = None):
+    """\
+    set api key for different providers
+
+    Parameters
+    ----------
+    api_key : str
+        api key of the LLM provider 
+    provider : str | None, optional
+        LLM provider, by default None
+    """
+    if provider is None:
+        os.environ["API_KEY"] = api_key
+    else:
+        os.environ[f"{provider.upper()}_API_KEY"] = api_key
+
+
 def get_celltype_name(text):
     for line in text.split("\n"):
         if line.startswith("####"):
