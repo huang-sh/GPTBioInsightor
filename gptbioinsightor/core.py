@@ -13,6 +13,11 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
         api_key= apikey, 
         base_url=base_url,
     )
+    if model.startswith("o1"):
+        sys_prompt = None
+        kwargs = {}
+    else:
+        kwargs = {"top_p": 0.5}
     if sys_prompt is None:
         sys_msg = []
     else:
@@ -22,7 +27,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
             model=model,
             messages=sys_msg + msgs,
             tools = tools,
-            top_p= 0.7,
+            **kwargs
         )
     except APIStatusError as e:
         raise ApiBalanceLow(provider, e.message, e.response, e.body)
