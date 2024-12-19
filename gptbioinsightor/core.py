@@ -52,7 +52,10 @@ def anthropic_client(msgs, model, apikey, sys_prompt=''):
 
 
 def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=None):
-    provider, model = parse_model(provider, model)
+    if base_url is None:
+        provider, model = parse_model(provider, model)
+    else:
+        provider, model = None, model
     API_KEY = get_api_key(provider)
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)
