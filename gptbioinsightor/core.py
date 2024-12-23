@@ -19,13 +19,14 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     else:
         kwargs = {"top_p": 0.5}
     if sys_prompt is None:
-        sys_msg = []
+        query_msgs = msgs
     else:
-        sys_msg = [{"role": "system", "content": sys_prompt}]
+        query_msgs = [{"role": "system", "content": sys_prompt}] + list(msgs)
     try:
+
         response = client.chat.completions.create(
             model=model,
-            messages=sys_msg + msgs,
+            messages=query_msgs,
             tools = tools,
             **kwargs
         )
@@ -35,7 +36,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     return response.choices[0].message.content
 
 
-def anthropic_client(msgs, model, apikey, sys_prompt=''):
+def anthropic_client(msgs, model, apikey, sys_prompt=None):
     import anthropic
 
     client = anthropic.Anthropic(
@@ -67,3 +68,4 @@ def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=Non
     else:
         content = openai_client(msgs, API_KEY, model, provider, base_url=base_url, sys_prompt=sys_prompt, tools=tools)
     return content
+
