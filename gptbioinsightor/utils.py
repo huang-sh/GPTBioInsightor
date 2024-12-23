@@ -108,46 +108,21 @@ class Outputor:
             self.handle.close()
 
 
-
 def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sys_prompt):
-    from .core import query_model
-    from .prompt import PRE_CELLTYPE_PROMPT
+    from .core import Agent
+    from .prompt import PRE_CELLTYPE_PROMPT1, PRE_CELLTYPE_PROMPT2, PRE_CELLTYPE_MERGE_PROMPT
     from concurrent.futures import ThreadPoolExecutor
-    text = PRE_CELLTYPE_PROMPT.format(number=cluster_num, background=background)
-    msg = [{"role": "user", "content": text}]
     from functools import partial
-    _aux_query = partial(query_model, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        results = list(executor.map(_aux_query , [msg, msg, msg]))
-    new_text = f"""Please integrate the three list into one list,
-    list1:
-    '''
-    {results[0]}
-    '''
-    list2:
-    '''
-    {results[1]}
-    '''
-    list3:
-    '''
-    {results[2]}
-    '''
-    please provide result using follow format:
-    ```
-    celltype1: classical marker
-        - cell state1: specifc gene markers, characteristic
-        - cell state2: specifc gene markers, characteristic
-    celltype2: classical marker
-        - cell state1: specifc gene markers, characteristic
-        - cell state2: specifc gene markers, characteristic
-    celltype3: classical marker
-        - cell state1: specifc gene markers, characteristic
-        - cell state2: specifc gene markers, characteristic
-    ......
-    ```
-    """
-    msg = [{"role": "user", "content": new_text}]
-    response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    chat_msg = [{"role": "user", "content": text}, {"role": "assistant", "content": response}]
+
+    query_num = 3
+    text = PRE_CELLTYPE_PROMPT1.format(number=cluster_num, background=background)
+    agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
+    query_func = partial(agent.query, use_context=False)
+
+    with ThreadPoolExecutor(max_workers=query_num) as executor:
+        results = executor.map(query_func , [text] * query_num)
+
+    chat_msg = [
+        {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)}, 
+        {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}]
     return chat_msg
