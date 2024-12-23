@@ -1,3 +1,6 @@
+import hashlib
+from functools import lru_cache
+
 from openai import OpenAI
 from .prompt import SYSTEM_PROMPT
 from .constant import API_SOURCE
@@ -69,3 +72,77 @@ def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=Non
         content = openai_client(msgs, API_KEY, model, provider, base_url=base_url, sys_prompt=sys_prompt, tools=tools)
     return content
 
+
+## source: https://stackoverflow.com/a/66729248
+def deep_freeze(thing):
+    from collections.abc import Collection, Mapping, Hashable
+    from frozendict import frozendict
+
+    if thing is None or isinstance(thing, str):
+        return thing
+    elif isinstance(thing, Mapping):
+        return frozendict({k: deep_freeze(v) for k, v in thing.items()})
+    elif isinstance(thing, Collection):
+        return tuple(deep_freeze(i) for i in thing)
+    elif not isinstance(thing, Hashable):
+        raise TypeError(f"unfreezable type: '{type(thing)}'")
+    else:
+        return thing
+
+def deep_freeze_args(func):
+    import functools
+
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return func(*deep_freeze(args), **deep_freeze(kwargs))
+    return wrapped
+
+
+class Agent:
+
+    def __init__(self, model=None, provider=None, sys_prompt=None, base_url=None):
+        self.provider = provider
+        self.model = model
+        self.sys_prompt = sys_prompt
+        self.base_url = base_url
+        self.history = []
+        self._query_with_cache = deep_freeze_args(lru_cache(maxsize=500)(query_model))
+        self._query_without_cache = query_model 
+
+    def query(self, text, use_context=True, add_context=True, use_cache=True):
+        if use_context:
+            query_msg = self.history.copy()
+        else:
+            query_msg = []
+        query_msg.append({"role": "user", "content": text})
+        if use_cache:
+            _query_func = self._query_with_cache
+        else:
+            _query_func = self._query_without_cache
+
+        response = _query_func(
+            query_msg,
+            self.provider,
+            self.model,
+            base_url=self.base_url,
+            sys_prompt=self.sys_prompt
+        )
+        if add_context:
+            self.history.extend([
+                {"role": "user", "content": text}, 
+                {"role": "assistant", "content": response}
+            ])
+
+        return response
+
+    def update_context(self, message):
+        if isinstance(message, dict):
+            self.history.append(message)
+        elif isinstance(message, list):
+            self.history.extend(message)
+    
+    def get_message(self, role=None):
+        if role is None:
+            return self.history
+        elif role in ["user", "assistant"]:
+            return [msg["content"] for msg in self.history if msg["role"] == role]
