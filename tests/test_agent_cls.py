@@ -1,6 +1,5 @@
 from gptbioinsightor.core import Agent 
 import pytest
-from gptbioinsightor.core import query_model
 
 MODEL_LIST = pytest.MODEL_LIST
 
@@ -28,3 +27,12 @@ def test_agent(provider, model):
     agent.update_context({'role': 'user', 'content': 'test2'})
     assert len(agent.history) == 7
     assert agent.history[-1]["content"] == "test2"
+
+    agent2 = Agent(model=model, provider=provider, sys_prompt=None, base_url=None)
+    res = agent2.repeat_query("what is your models", n=3, add_context=False)
+    assert len(agent2.history) == 0
+    assert len(res) == 3
+
+    res = agent2.repeat_query("what is your models", n=3)
+    assert len(agent2.history) == 6
+    assert len(res) == 3
