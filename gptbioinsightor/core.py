@@ -1,5 +1,7 @@
+import os
 import hashlib
-from functools import lru_cache
+from functools import lru_cache, partial
+from concurrent.futures import ThreadPoolExecutor
 
 from openai import OpenAI
 from .prompt import SYSTEM_PROMPT
@@ -134,6 +136,22 @@ class Agent:
             ])
 
         return response
+    
+    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True):
+        if n_jobs is None:
+            n_jobs = min(os.cpu_count()//2, n)
+
+        query_func = partial(self.query, use_context=use_context, add_context=False, use_cache=False)
+        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+            results = list(executor.map(query_func , [text] * n))
+        if add_context:
+            for res in results:
+                self.history.extend([
+                    {"role": "user", "content": text}, 
+                    {"role": "assistant", "content": res}
+                ])
+
+        return results
 
     def update_context(self, message):
         if isinstance(message, dict):
