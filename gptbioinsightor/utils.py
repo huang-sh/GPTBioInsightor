@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from functools import lru_cache
 
 import scanpy as sc
 import pandas as pd
@@ -107,7 +108,7 @@ class Outputor:
         if self.path is not None: 
             self.handle.close()
 
-
+@lru_cache(maxsize=500)
 def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sys_prompt):
     from .core import Agent
     from .prompt import PRE_CELLTYPE_PROMPT1, PRE_CELLTYPE_PROMPT2, PRE_CELLTYPE_MERGE_PROMPT
@@ -117,12 +118,9 @@ def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sy
     query_num = 3
     text = PRE_CELLTYPE_PROMPT1.format(number=cluster_num, background=background)
     agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
-    query_func = partial(agent.query, use_context=False)
-
-    with ThreadPoolExecutor(max_workers=query_num) as executor:
-        results = executor.map(query_func , [text] * query_num)
-
+    agent.repeat_query(text, n=3)
     chat_msg = [
         {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)}, 
-        {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}]
+        {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}
+    ]
     return chat_msg
