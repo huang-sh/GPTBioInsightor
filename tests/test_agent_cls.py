@@ -36,3 +36,12 @@ def test_agent(provider, model):
     res = agent2.repeat_query("what is your models", n=3)
     assert len(agent2.history) == 6
     assert len(res) == 3
+
+    agent3 = Agent(model=model, provider=provider, sys_prompt=None, base_url=None)
+    res3 = agent3.batch_query(["what is your name"]*3, add_context=False)
+    assert len(agent3.history) == 0
+    assert len(res3) == 3
+
+    res3 = agent3.batch_query(["what is your name"]*3)
+    assert len(agent3.history) == 6
+    assert len(res3) == 3

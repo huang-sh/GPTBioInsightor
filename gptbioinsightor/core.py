@@ -136,22 +136,35 @@ class Agent:
             ])
 
         return response
-    
-    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True):
-        if n_jobs is None:
-            n_jobs = min(os.cpu_count()//2, n)
 
-        query_func = partial(self.query, use_context=use_context, add_context=False, use_cache=False)
+    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True):
+        if n_jobs is None:
+            n_jobs = min(max(1, os.cpu_count() // 2), len(texts))
+
+        query_func = partial(
+            self.query,
+            use_context=use_context,
+            add_context=False,
+            use_cache=False
+        )
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-            results = list(executor.map(query_func , [text] * n))
+            results = list(executor.map(query_func , texts))
         if add_context:
-            for res in results:
+            for text, res in zip(texts, results):
                 self.history.extend([
                     {"role": "user", "content": text}, 
                     {"role": "assistant", "content": res}
                 ])
-
         return results
+    
+    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True):
+        if n_jobs is None:
+            n_jobs = min(max(1, os.cpu_count() // 2), n)
+        texts = [text] * n
+        return self._multi_query(texts, n_jobs=n_jobs, use_context=use_context, add_context=add_context)
+
+    def batch_query(self, texts, n_jobs=None, use_context=True, add_context=True):
+        return self._multi_query(texts, n_jobs=n_jobs, use_context=use_context, add_context=add_context)
 
     def update_context(self, message):
         if isinstance(message, dict):
