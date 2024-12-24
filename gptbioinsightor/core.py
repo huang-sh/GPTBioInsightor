@@ -137,7 +137,7 @@ class Agent:
 
         return response
 
-    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True):
+    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), len(texts))
 
@@ -145,7 +145,7 @@ class Agent:
             self.query,
             use_context=use_context,
             add_context=False,
-            use_cache=False
+            use_cache=use_cache
         )
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             results = list(executor.map(query_func , texts))
@@ -161,10 +161,22 @@ class Agent:
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), n)
         texts = [text] * n
-        return self._multi_query(texts, n_jobs=n_jobs, use_context=use_context, add_context=add_context)
+        return self._multi_query(
+            texts, 
+            n_jobs=n_jobs, 
+            use_context=use_context, 
+            add_context=add_context, 
+            use_cache=False  # We don't want to get same results when using repeated query
+        )
 
-    def batch_query(self, texts, n_jobs=None, use_context=True, add_context=True):
-        return self._multi_query(texts, n_jobs=n_jobs, use_context=use_context, add_context=add_context)
+    def batch_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
+        return self._multi_query(
+            texts, 
+            n_jobs=n_jobs, 
+            use_context=use_context, 
+            add_context=add_context,
+            use_cache=use_cache
+        )
 
     def update_context(self, message):
         if isinstance(message, dict):
