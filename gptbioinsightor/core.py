@@ -22,7 +22,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
         sys_prompt = None
         kwargs = {}
     else:
-        kwargs = {"top_p": 0.5}
+        kwargs = {"top_p": 0.5, "temperature": 0.2}
     if sys_prompt is None:
         query_msgs = msgs
     else:
