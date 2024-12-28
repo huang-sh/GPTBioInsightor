@@ -47,7 +47,17 @@ def anthropic_client(msgs, model, apikey, sys_prompt=None):
     client = anthropic.Anthropic(
         api_key=apikey
     )
-    sys_prompt = '' if sys_prompt is None else sys_prompt
+    if sys_prompt is None:
+        sys_prompt = ''
+    else:
+        sys_prompt = [
+            {
+                "type": "text",
+                "text": sys_prompt,
+                "cache_control": {"type": "ephemeral"}
+            }
+        ]
+
     if model in ["claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20240620", "claude-3-5-haiku-20241022"]:
         max_tokens = 8192
     else:
@@ -169,7 +179,7 @@ class Agent:
             use_cache=False  # We don't want to get same results when using repeated query
         )
 
-    def batch_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
+    def multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
         return self._multi_query(
             texts, 
             n_jobs=n_jobs, 
@@ -184,7 +194,7 @@ class Agent:
         elif isinstance(message, list):
             self.history.extend(message)
     
-    def get_message(self, role=None):
+    def get_history(self, role=None):
         if role is None:
             return self.history
         elif role in ["user", "assistant"]:
