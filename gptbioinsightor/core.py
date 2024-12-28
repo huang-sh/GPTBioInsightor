@@ -68,6 +68,8 @@ def anthropic_client(msgs, model, apikey, sys_prompt=None):
         max_tokens=max_tokens, 
         messages=msgs
     )
+    if response.stop_reason != "end_turn":
+        print("stop_reason: " :response.stop_reason)
     content = response.content[0].text
     return content
 
