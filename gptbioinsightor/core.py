@@ -10,19 +10,20 @@ from .utils import get_api_key, parse_model
 from .exception import APIStatusError, ApiBalanceLow
 
 
-def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None, tools=None):
+def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None, temperature=0.5):
     if base_url is None:
         base_url = API_SOURCE[provider]
 
     client = OpenAI(
         api_key= apikey, 
         base_url=base_url,
+        websocket_base_url=None
     )
     if model.startswith("o1"):
         sys_prompt = None
         kwargs = {}
     else:
-        kwargs = {"top_p": 0.5, "temperature": 0.2}
+        kwargs = {"top_p": 0.5, "temperature": temperature}
     if sys_prompt is None:
         query_msgs = msgs
     else:
@@ -32,7 +33,6 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
         response = client.chat.completions.create(
             model=model,
             messages=query_msgs,
-            tools = tools,
             **kwargs
         )
     except APIStatusError as e:
@@ -41,7 +41,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     return response.choices[0].message.content
 
 
-def anthropic_client(msgs, model, apikey, sys_prompt=None):
+def anthropic_client(msgs, model, apikey, sys_prompt=None, temperature=0.5):
     import anthropic
 
     client = anthropic.Anthropic(
@@ -66,15 +66,16 @@ def anthropic_client(msgs, model, apikey, sys_prompt=None):
         model=model,
         system=sys_prompt,
         max_tokens=max_tokens, 
+        temperature=temperature,
         messages=msgs
     )
     if response.stop_reason != "end_turn":
-        print("stop_reason: " :response.stop_reason)
+        print("stop_reason: ", response.stop_reason)
     content = response.content[0].text
     return content
 
 
-def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=None):
+def query_model(msgs, provider, model, base_url=None, sys_prompt=None, temperature=None):
     if base_url is None:
         provider, model = parse_model(provider, model)
     else:
@@ -83,7 +84,7 @@ def query_model(msgs, provider, model, base_url=None, sys_prompt=None, tools=Non
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)
     else:
-        content = openai_client(msgs, API_KEY, model, provider, base_url=base_url, sys_prompt=sys_prompt, tools=tools)
+        content = openai_client(msgs, API_KEY, model, provider, base_url=base_url, sys_prompt=sys_prompt, temperature=temperature)
     return content
 
 
@@ -123,7 +124,7 @@ class Agent:
         self._query_with_cache = deep_freeze_args(lru_cache(maxsize=500)(query_model))
         self._query_without_cache = query_model 
 
-    def query(self, text, use_context=True, add_context=True, use_cache=True):
+    def query(self, text, use_context=True, add_context=True, use_cache=True, temperature=1):
         if use_context:
             query_msg = self.history.copy()
         else:
@@ -139,7 +140,8 @@ class Agent:
             self.provider,
             self.model,
             base_url=self.base_url,
-            sys_prompt=self.sys_prompt
+            sys_prompt=self.sys_prompt,
+            temperature=temperature
         )
         if add_context:
             self.history.extend([
@@ -149,7 +151,7 @@ class Agent:
 
         return response
 
-    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
+    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True, temperature=1):
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), len(texts))
 
@@ -157,19 +159,17 @@ class Agent:
             self.query,
             use_context=use_context,
             add_context=False,
-            use_cache=use_cache
+            use_cache=use_cache,
+            temperature=temperature
         )
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             results = list(executor.map(query_func , texts))
         if add_context:
             for text, res in zip(texts, results):
-                self.history.extend([
-                    {"role": "user", "content": text}, 
-                    {"role": "assistant", "content": res}
-                ])
+                self.create_conversation(text, res)
         return results
     
-    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True):
+    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True, temperature=1):
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), n)
         texts = [text] * n
@@ -178,16 +178,18 @@ class Agent:
             n_jobs=n_jobs, 
             use_context=use_context, 
             add_context=add_context, 
-            use_cache=False  # We don't want to get same results when using repeated query
+            use_cache=False,  # We don't want to get same results when using repeated query
+            temperature=temperature
         )
 
-    def multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True):
+    def multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True, temperature=1):
         return self._multi_query(
             texts, 
             n_jobs=n_jobs, 
             use_context=use_context, 
             add_context=add_context,
-            use_cache=use_cache
+            use_cache=use_cache,
+            temperature=temperature
         )
 
     def update_context(self, message):
@@ -201,3 +203,17 @@ class Agent:
             return self.history
         elif role in ["user", "assistant"]:
             return [msg["content"] for msg in self.history if msg["role"] == role]
+    
+    def create_conversation(self, user_txt, assistant_txt):
+        if self.provider == "anthropic":
+            conversation = [
+                {"role": "user",  "content": [{"type": "text",  "text": user_txt, "cache_control": {"type": "ephemeral"}}]}, 
+                {"role": "assistant",  "content": [{"type": "text",  "text": assistant_txt, "cache_control": {"type": "ephemeral"}}]},
+            ]
+        else:
+            conversation = [
+                {"role": "user",  "content": user_txt}, 
+                {"role": "assistant",  "content": assistant_txt},
+            ]
+        self.history.extend(conversation)
+        return conversation
