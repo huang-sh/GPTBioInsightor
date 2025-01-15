@@ -108,19 +108,31 @@ class Outputor:
         if self.path is not None: 
             self.handle.close()
 
-@lru_cache(maxsize=500)
-def get_pre_celltype_chat(cluster_num, background, provider, model, base_url, sys_prompt):
+# @lru_cache(maxsize=500)
+def list_celltypes(num, background, provider, model, base_url, sys_prompt):
     from .core import Agent
     from .prompt import PRE_CELLTYPE_PROMPT1, PRE_CELLTYPE_PROMPT2, PRE_CELLTYPE_MERGE_PROMPT
     from concurrent.futures import ThreadPoolExecutor
     from functools import partial
 
     query_num = 3
-    text = PRE_CELLTYPE_PROMPT1.format(number=cluster_num, background=background)
+    text = PRE_CELLTYPE_PROMPT1.format(num=num, background=background)
     agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
     agent.repeat_query(text, n=3)
+    # for i in agent.history:
+    #     if i["role"] == "assistant":
+    #         print(i["content"])
     chat_msg = [
         {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)}, 
         {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}
     ]
     return chat_msg
+
+
+def agent_pipe(agent, pct_txt):
+    from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
+    pre_res = agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
+    scores = agent.query(CELLTYPE_SCORE, use_context=True, add_context=True, use_cache=False)
+    report_prompt = CELLTYPE_REPORT.format(score=scores)
+    agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
+    return agent.get_history(role="assistant")
