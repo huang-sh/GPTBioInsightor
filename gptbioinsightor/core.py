@@ -3,7 +3,7 @@ import hashlib
 from functools import lru_cache, partial
 from concurrent.futures import ThreadPoolExecutor
 
-from openai import OpenAI
+
 from .prompt import SYSTEM_PROMPT
 from .constant import API_SOURCE
 from .utils import get_api_key, parse_model
@@ -11,13 +11,14 @@ from .exception import APIStatusError, ApiBalanceLow
 
 
 def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None, temperature=0.5):
+    from openai import OpenAI
+    
     if base_url is None:
         base_url = API_SOURCE[provider]
 
     client = OpenAI(
         api_key= apikey, 
-        base_url=base_url,
-        websocket_base_url=None
+        base_url=base_url
     )
     if model.startswith("o1"):
         sys_prompt = None
@@ -35,6 +36,8 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
             messages=query_msgs,
             **kwargs
         )
+        if response.choices[0].finish_reason != "stop":
+            print("finish_reason: ", response.choices[0].finish_reason)
     except APIStatusError as e:
         raise ApiBalanceLow(provider, e.message, e.response, e.body)
         
