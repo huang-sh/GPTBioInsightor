@@ -136,3 +136,20 @@ def agent_pipe(agent, pct_txt):
     report_prompt = CELLTYPE_REPORT.format(score=scores)
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
+
+
+def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap='viridis'):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    
+    df = pd.DataFrame(score_dic).T.apply(pd.to_numeric)
+    df = df[df > cutoff].dropna(axis=1, how='all') 
+    plt.figure(figsize=figsize)
+    base_size = min(figsize) * 2   
+    font_size = max(base_size / max(df.shape), 8) 
+    heatmap = sns.heatmap(df, annot=True, cmap=cmap, fmt='g', linewidths=0.5, annot_kws={"size": font_size})
+    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
+    plt.title('CellType Score Heatmap')
+    plt.xlabel('CellTypes')
+    plt.ylabel('Cluster')
+    return heatmap
