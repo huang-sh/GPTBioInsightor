@@ -7,24 +7,16 @@ from collections.abc import Iterable
 
 from anndata import AnnData
 
-from .core import query_model
+from .core import query_model, Agent
 from . import utils as ul
 from .prompt import *
-
-
-def _query_celltype(queryid, gene_txt, cluster_num, background, provider, model, base_url, sys_prompt, history=None):
-    text = CELLTYPE_PROMPT.format(setid=queryid, gene=gene_txt, setnum=cluster_num,background=background)
-    msg = [{"role": "user", "content": text}]
-    if history is not None: 
-        msg = history + msg
-    response = query_model(msg, provider=provider, model=model, base_url=base_url, sys_prompt=sys_prompt)
-    return response
 
 
 def get_celltype(
     input: AnnData | dict, 
     out: Path| str = None, 
     background: str = None, 
+    pathway: dict | None = None,
     key: str = "rank_genes_groups", 
     topnumber: int = 15, 
     n_jobs: int | None = None,
@@ -72,37 +64,62 @@ def get_celltype(
     """
     sys_prompt = SYSTEM_PROMPT
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
+    genes_ls = []
+    for ck, genes in gene_dic.items():
+        genes_ls.append(f"   - cluster {ck}: {','.join(genes[:topnumber])}")
+    all_gene_txt = "\n".join(genes_ls)
+    chat_msg = ul.list_celltypes(len(gene_dic), background, provider, model, base_url, sys_prompt)
     ot = ul.Outputor(out)
     ot.write("# CellType Analysis")
-    chat_msg = ul.get_pre_celltype_chat(len(gene_dic), background, provider, model, base_url, sys_prompt)
+    ot.write("GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use")
     ot.write("## Potential CellType")
     ot.write(f"In scRNA-Seq data background of '{background}', the following Potential CellType to be identified:")
     ot.write(chat_msg[-1]["content"])
-    for i in chat_msg:
-        print(i["content"])
 
-    if n_jobs is None:
-        n_jobs = min(os.cpu_count()//2, len(gene_dic))
-
-    def _aux_func(args):
-        gene_txt = "\n".join([f"cluster {k}: {','.join(genes[:topnumber])}" for k,genes in args[1].items()])
-        return _query_celltype(args[0], gene_txt, len(args[1]), background, provider, model, base_url, sys_prompt, history=chat_msg)
-
-    celltype_ls = []
     with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-        results = executor.map(_aux_func, [(k, gene_dic) for k in gene_dic.keys()])
-        for gsid, res in zip(gene_dic.values(), results):
-            res = res.strip("```").strip("'''").strip()
-            ot.write(res)
-            ctn = ul.get_celltype_name(res)
-            celltype_ls.append(ctn)
-    ot.close()
-    if len(gene_dic.keys()) == len(celltype_ls):
-        celltype_dic = {k:celltype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
-    else: # low-capability model may not get correct output
-        celltype_dic = {}
-        print("The model may not be producing correct outputs; please try using a better model")
-    return celltype_dic
+        futures = {}
+        pathway = {} if pathway is None else pathway
+        pathway_txt_dic = {}
+        for k, genes in gene_dic.items():
+            agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
+            gene_txt = f"   - cluster {k}: {','.join(genes[:topnumber])}"
+            cluster_pathway = pathway.get(k, {})
+            pw_txt = ""
+            for db, pw in cluster_pathway.items():
+                pw_txt += f"    - {db}: {','.join(pw)}\n"
+            pathway_txt_dic[k] = pw_txt
+            pct_txt = CELLTYPE_PROMPT.format(
+                candidate=chat_msg[-1]["content"], 
+                setid=k, gene=gene_txt, 
+                setnum=len(gene_dic),
+                background=background, 
+                pathway=pw_txt
+            )
+            future = executor.submit(ul.agent_pipe, agent, pct_txt)
+            futures[k] = future
+        score_dic = {}
+        for k, future in futures.items():
+            reps = future.result()
+            ot.write(f"## cluster geneset {k}\n")
+            ot.write(f"### Gene List\n")
+            ot.write(f"Top genes\n```\n{','.join(gene_dic[k])}```\n")
+            ot.write(f"enrichment pathway\n```\n{pathway_txt_dic[k]}```\n")
+            ot.write("### celltype thinking\n")
+            ot.write(reps[0])
+            ot.write("### Score\n")
+            ot.write(reps[1])
+            ot.write("### Report\n")
+            ot.write(reps[2])
+            score_dic[k] = {}
+            for cs in reps[1].strip().split("\n")[-3:]:
+                try:
+                    ct, score = cs.split(":")
+                    score_dic[k][ct.strip()] = score.strip()
+                except:
+                    print(cs)
+                    score_dic[k] = cs
+    score_dic = ul.unify_name(score_dic, model, provider, base_url)
+    return score_dic
 
 
 def get_subtype(
