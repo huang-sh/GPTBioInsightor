@@ -1,0 +1,328 @@
+CELLTYPE_PROMPT = """
+<Candidate_celltype>
+{candidate}
+</Candidate_celltype>
+<INSTRUCTIONS>
+1. Context Analysis
+   Cell type:
+      - eg. Common Cell Types in Tissues, like Glial cells are not in blood
+   Cell state:
+      - experimental condition, dieseas and more
+      - eg. Endothelial Cells within tumor tissue: active in neovascularization supporting tumor growth
+
+2. Marker-Based Analysis: High Priority for Cell type prediction
+
+   Cell-type-specific markers: 
+      - Broad Category of celltype markers: eg. PTPRC for immune cell
+      - Narrow Category of celltype markers: eg. CD79A for B cell; ACTA2 for smooth muscle cell; 
+      - marker combinations: eg. PPBP,PF4,CD9,KRT8 for CTC
+   Cell-state-specific Markers: Phenotypic Features Acquired with Cell State Changes
+      - eg. Fibroblasts/Stellate cell will get ACTA2(α-SMA) when activated
+
+3. Pathway-Based Analysis: High Priority for Cell state prediction
+   Cell-state-specific Pathways:
+      - eg. Stress response: p53 signaling, HIF-1 signaling
+   Cell-type-specific Function: 
+      - eg. Immune cells: TCR signaling, BCR signaling
+
+4. Quality Control
+   Inclusion Criteria:
+      - Strong cell type-specific markers
+      - Coherent pathways enrichment
+      - Context-appropriate cell type predictions
+   
+   Exclusion Criteria:
+      - Presence of definitive negative markers
+      - Conflicting pathway patterns
+      - Biologically implausible combinations
+
+   Distinguishing Cell Types and Cell States:
+      - Do not confuse cell state features(Marker, pathway) with cell type features.
+      - e.g. if (celltypeA with activation state) == (celltypeB), then celltypeA and celltypeB are both candidate cell types
+
+   Potential celltype and state:
+      - MUST review each cell type in Candidate_celltype.
+      - New celltype could be provided if there are NO matched Markers in Candidate_celltype.
+
+   Validation
+      - Provide Gold standard markers(not in cluster {setid} geneset) for cell type validation
+</INSTRUCTIONS>
+<Reminder>
+Focus on existing evidence, Top DEGs are selected for Input Geneset, so Geneset contain limited genes and do not use the lack of classic markers as the basis for your reasoning.
+But make reasonable inferential extensions, such as transcription factor regulation, gene interactions, and other plausible speculations.
+</Reminder>
+<Input>
+  <biological_context>
+    {background}
+  </biological_context>
+  <Geneset>
+    {gene} 
+  </Geneset>
+  <Pathway>
+    {pathway}
+  </Pathway>
+</Input>
+<Task>
+As BioInsightor, please think about three most likely celltypes for Input based on INSTRUCTIONS. // If you provide a comprehensive and professional analysis, you will publish articles in Cell/Nature/Science
+</Task>
+"""
+
+
+
+
+
+CELLTYPE_REPORT = """
+Output Format (high socre celltype appear first), without any additional prompt or string:
+'''
+
+### Celltype Prediction
+#### Celltype1: [CELLTYPE NAME] (score: [SCORE])
+
+[Cell state inferring]
+
+**Key Markers**:
+- Cell-type-specific: [CELL-SPECIFIC MARKERS]
+- Cell-state-specific: [STATE-SPECIFIC MARKERS] 
+
+**Evidence and Reasoning** // combine gene marker, enrichment pathway and Cell Origin, >120 words
+- [PRIMARY EVIDENCE]
+- [SECONDARY EVIDENCE]
+- [ADDITIONAL EVIDENCE AS NEEDED]
+
+**Validation**: [Gold Standard MARKERS TO VALIDATE Celltype1]
+
+#### Celltype2: [CELLTYPE NAME] (score: [SCORE])
+
+[Cell state inferring]
+
+**Key Markers**:
+- Cell-type-specific: [CELL-SPECIFIC MARKERS]
+- Cell-state-specific: [STATE-SPECIFIC MARKERS] 
+
+**Evidence and Reasoning** // combine gene marker, enrichment pathway and Cell Origin, >120 words
+- [PRIMARY EVIDENCE]
+- [SECONDARY EVIDENCE]
+- [ADDITIONAL EVIDENCE AS NEEDED]
+
+**Validation**: [Gold Standard MARKERS TO VALIDATE Celltype2]
+
+#### Celltype3: [CELLTYPE NAME] (score: [SCORE])
+
+[Cell state inferring]
+
+**Key Markers**:
+- Cell-type-specific: [CELL-SPECIFIC MARKERS]
+- Cell-state-specific: [STATE-SPECIFIC MARKERS] 
+
+**Evidence and Reasoning** // combine gene marker, enrichment pathway and Cell Origin, >120 words
+- [PRIMARY EVIDENCE]
+- [SECONDARY EVIDENCE]
+- [ADDITIONAL EVIDENCE AS NEEDED]
+
+**Validation**: [Gold Standard MARKERS TO VALIDATE Celltype3]
+
+### Novel Insights // combine gene marker, enriched pathway and biological context, >100 words
+- [NOTEWORTHY PATTERNS]
+- [POTENTIAL NEW FINDINGS]
+'''
+"""
+
+
+
+
+
+CELLTYPE_SCORE = """
+<Scoring_Criteria_with_pathway>
+Marker Profile (60 pts) // common and classical marker will get high score
+- Matching celltype markers present: max 45   // e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
+- Narrow markers of celltype present: max 15  // e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
+- Share common markers with other cell types or state: -10
+- Negative markers absent: -30
+
+Pathway Profile (20 pts)
+- Enriched pathways match cell state: 15
+- Enriched pathways match cell type: 5
+- shared Pathway with other cell types: -10
+- conflicting pathways: -20
+
+Biological Context (20 pts)
+- Plausible cell type in Context: 10
+- Plausible cell state in Context: 10
+- implausible cell type or state in Context: -30
+</Scoring_Criteria_with_pathway>
+
+<Scoring_Criteria_without_pathway>
+Marker Profile (70 pts)  // commson and classical marker will get high score
+- Matching celltype markers present: max 50   // For example, if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
+- Narrow markers of celltype present: max 20  //For example, if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
+- Share common markers with other cell types or state: -15
+- Negative markers absent: -30
+
+Biological Context (30 pts)
+- Plausible cell type in Context: 15
+- Plausible cell state in Context: 15
+- implausible cell type or state in Context: -30
+</Scoring_Criteria_without_pathway>
+<Reminder>
+- Do not use the lack of classic markers as the basis for your scoring.
+- Negative markers are markers which are impossible to be present in the cell type.
+</Reminder>
+<Task>
+Please score the above each Cell Type Prediction of cluster geneset using above standard (100 points),
+if there is no pathway provided, use Scoring_Criteria_without_pathway, otherwise use Scoring_Criteria_with_pathway
+In addition to your thinking process, the final result should be returned with format: response_format,  do not include tag
+</Task>
+<response_format>
+CELLTYPE1: SCORE
+CELLTYPE2: SCORE
+CELLTYPE3: SCORE
+</response_format>
+"""
+
+
+
+CELLTYPE_QC_PROMPT = """
+## cluster geneset {setid}
+
+### Gene List
+Top genes
+```
+[cluster {setid} gene list]
+```
+enrichment pathway
+```
+[cluster {setid} pathway]
+```
+"""
+
+
+
+
+SUBTYPE_PROMPT = """
+Hi, BioInsightor! Please determine cell subtypes of {celltype} for each geneset.Your reasoning process must be based on INSTRUCTION.
+
+GENESET:
+'''
+{genesets}
+'''
+
+INSTRUCTION:
+1. determine cell subtype according to specific gene markers, please provide evidence and reason
+2. give full consideration to context of cell: BACKGROUND, determine the most logical subtype
+3. consider the context: BACKGROUND; speculate the cell state, such as stress, invasive, proliferative, developmental stages, or other transient or dynamically responsive properties
+
+
+BACKGROUND:
+{background}
+
+For the output you should follow this format:
+'''
+### [geneset id] : [ SUBTYPE NAME ] 
+** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
+** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
+**reason**: [REASON]
+**cell state**: [POTENTIAL CELL STATE]
+
+### [geneset id] : [ SUBTYPE NAME ] 
+** gene marker**: [ALL GENE MARKER SUPPORTED THE CELLTYPE]
+** subtype gene marker**: [SPECIFIC GENE MARKER FOR CELL SUBTYPE]
+**reason**: [REASON]
+**cell state**: [POTENTIAL CELL STATE]
+...
+
+'''
+"""
+
+
+
+CHECK_TYPE_PROMPT = """
+
+<Task>
+Please determine whether Gene_marker can characterize this Celltype within Biological_context.
+Please output in the response_format
+</Task>
+<INSTRUCTIONS>
+  1. review and check if the Celltype is reasonable based on the provided gene in Geneset.
+  2. give full consideration to context of cell: pathway and Biological_context if provided
+  3. provide new celltype in reason if the Celltype is not reasonable 
+</INSTRUCTIONS>
+<Input>
+  <Celltype>
+    {celltype}
+  </Celltype>
+  <Gene_marker>
+    {genest}
+  </Gene_marker>
+  <Pathway>
+    {pathway}
+  </Pathway>>
+  <Biological_context>
+    {background}
+  </Biological_context>
+</Input>
+
+<response_format>
+### [Input celltype]: [ YES or NO ]  // Is this type reasonable?
+**reason**: [REASON] // Why do you think it is or isn't reasonable?
+
+
+### [Corrected celltype] // If the celltype is reasonable, provide original celltype
+[Cell state inferring]
+
+**Key Markers**:
+- Cell-type-specific: [CELL-SPECIFIC MARKERS]
+- Cell-state-specific: [STATE-SPECIFIC MARKERS] 
+
+**Evidence and Reasoning**
+- [PRIMARY EVIDENCE]
+- [SECONDARY EVIDENCE]
+- [ADDITIONAL EVIDENCE AS NEEDED]
+
+**Validation**: [Gold Standard MARKERS TO VALIDATE Celltype1]
+</response_format>
+"""
+
+
+
+PRE_CELLTYPE_PROMPT1 = """
+<Input>
+  <Biological_context>
+    {background}
+  </Biological_context>
+</Input>
+<Task>
+Within the background<Biological_context>, please list the {num} most likely different cell types(Broad Category, such as T cell, not CD8 T cell) that are easy to detect and commonly classified in actual scRNA-Seq data analysis.
+if possible, also include two most potential cell states for each cell type within the given Biological_context.
+</Task>
+"""
+
+PRE_CELLTYPE_PROMPT2 = """
+In scRNA-Seq study, the scRNA-Seq data is derived from the biological context of '{background}'.
+Please list the most likely and common cell types to be identified in actual scRNA-Seq data analysis, also include the potential cell states for each cell type within the given biological context.
+"""
+
+PRE_CELLTYPE_MERGE_PROMPT = """
+<Task>
+Based on the previous three conversation, integrate all above three answers(cell types and states).
+Output result using follow format(without any additional words or string):
+<response_format>
+Candidate celltype:
+[celltype1]: [classical marker]
+   - [cell state1]: [specifc gene markers], [phenotype characteristic]
+   - [cell state2]: [specifc gene markers], [phenotype characteristic]
+   - [cell state3]: [specifc gene markers], [phenotype characteristic]
+   - ...
+celltype2: classical marker
+   - [cell state1]: [specifc gene markers], [phenotype characteristic]
+   - [cell state2]: [specifc gene markers], [phenotype characteristic]
+   - ...
+......
+</response_format>
+</Task>
+<Instruction>
+1. include previous all cell types and states information
+2. correct and exclude unreasonable cell types and states, focus on Biological_context and Geneset
+3. provide classical gene markers(does not need to be in the Input geneset) for each celltype in your output 
+</Instruction>
+
+"""
