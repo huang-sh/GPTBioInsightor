@@ -153,3 +153,33 @@ def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap='viridis'):
     plt.xlabel('CellTypes')
     plt.ylabel('Cluster')
     return heatmap
+
+
+def unify_name(dic, model, provider=None, base_url=None):
+    from .core import Agent
+    agent = Agent(model=model, provider=provider, sys_prompt=None, base_url=base_url)
+
+    fmt_demo = """
+    {
+        '0': {'Plasma': '85', 'Memory B Cells': '70', 'Activated B Cells': '60'},
+        '1': {'T Cells': '85', 'NK Cells': '25', 'Dendritic Cells': '5'}
+    }
+    """
+    text = f"""
+    ```JSON
+    {str(dic)}
+    ```
+    Unify the cell type names in this JSON data, using the same term to represent the same cell type. 
+    Only return the corrected JSON format data,without any additional characters or text, such as "", ```or ', like:
+
+    {fmt_demo}
+
+    """
+    new_dic_str = agent.query(text, use_context=False, add_context=False, use_cache=True)
+    try:
+        new_dic = eval(new_dic_str)
+    except:
+        print("Failed to unify the cell type names")
+    finally:
+        new_dic = dic
+    return new_dic
