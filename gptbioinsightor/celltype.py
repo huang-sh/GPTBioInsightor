@@ -47,7 +47,8 @@ def get_celltype(
         LLM provider, by default None
         "openai" for chatgpt
         "aliyun" for qwen
-        "moonshot" for kimi
+        "deepseek" for DeepSeek
+        "anthropic" for claude
     model : str | None, optional
         set a model based on LLM provider, by default None
     group : str | Iterable, optional
