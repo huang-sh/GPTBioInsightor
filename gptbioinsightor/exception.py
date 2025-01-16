@@ -21,3 +21,8 @@ class ApiBalanceLow(APIStatusError):
             self.message = message
             # self.message = f"{provider} does not have enough quota"
         super().__init__(self.message, response=response, body=body)
+
+
+class RateLimitError:
+    def __init__(self, provider, message, response, body) -> None:
+        pass
