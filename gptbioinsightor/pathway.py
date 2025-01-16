@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from .prompt import *
+from .prompt import PATHWAY_NAMING,LANG_PROMPT,LANG_PROMPT,BIO_PROCESS_PROMPT
 from . import utils as ul
-from .core import query_model
+from .core import query_model, Agent
 from .constant import LANG_DIC
 
 
@@ -88,3 +88,137 @@ def depict_pathway(
             res = res.strip("```").strip("'''")
             ot.write(res)
     ot.close()
+
+
+def name_pathway(
+    input: AnnData | dict, 
+    out: Path| str = None, 
+    background: str = None, 
+    key: str = "rank_genes_groups", 
+    topnumber: int = 100, 
+    n_jobs: int | None = None,
+    provider: str | None = None,
+    model: str | None = None,
+    group: str | Iterable[str] | None = None,  
+    base_url: str | None = None, 
+    rm_genes=True
+):
+    """\
+    Process naming and analysis using LLM.
+
+    Parameters
+    ----------
+    input : AnnData | dict
+        An AnnData object or geneset dict
+    out : Path | str, optional
+        output path, by default None
+    background : str, optional
+        background information of input data, by default None
+    key : str, optional
+        rank_genes_groups key, by default "rank_genes_groups"
+    topnumber : int, optional
+        select top gene for analysis, by default 15
+    n_jobs : int | None, optional
+        set multiple jobs for querying LLM, by default None
+    provider : str| None, optional
+        LLM provider, by default None
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "deepseek" for DeepSeek
+        "anthropic" for claude
+    model : str | None, optional
+        set a model based on LLM provider, by default None
+    group : str | Iterable, optional
+         Which group, by default None
+    base_url : str | None, optional
+        customized LLM API url, by default None
+    rm_genes : bool, optional
+        remove rb and mt genes, by default True
+
+    Returns
+    -------
+    None
+    """
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
+    ot = ul.Outputor(out)
+    ot.write("# Process Naming and Analysis")
+    ot.write("GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use")
+
+    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        futures = {}
+        for k, genes in gene_dic.items():
+            agent = Agent(model=model, provider=provider, sys_prompt=None, base_url=base_url)
+            query_txt = PATHWAY_NAMING.format(geneset=" ".join(genes))
+            future = executor.submit(agent.query, query_txt)
+            futures[k] = future
+        for k, future in futures.items():
+            reps = future.result()
+            ot.write(f"## cluster geneset {k}\n")
+            ot.write(f"{reps}\n")
+
+
+def analyse_pathway(
+    input: AnnData | dict, 
+    out: Path| str = None, 
+    background: str = None, 
+    key: str = "rank_genes_groups", 
+    topnumber: int = 100, 
+    n_jobs: int | None = None,
+    provider: str | None = None,
+    model: str | None = None,
+    group: str | Iterable[str] | None = None,  
+    base_url: str | None = None, 
+    rm_genes=True
+):
+    """\
+    Biological Process Analysis Using LLM.
+
+    Parameters
+    ----------
+    input : AnnData | dict
+        An AnnData object or geneset dict
+    out : Path | str, optional
+        output path, by default None
+    background : str, optional
+        background information of input data, by default None
+    key : str, optional
+        rank_genes_groups key, by default "rank_genes_groups"
+    topnumber : int, optional
+        select top gene for analysis, by default 15
+    n_jobs : int | None, optional
+        set multiple jobs for querying LLM, by default None
+    provider : str| None, optional
+        LLM provider, by default None
+        "openai" for chatgpt
+        "aliyun" for qwen
+        "deepseek" for DeepSeek
+        "anthropic" for claude
+    model : str | None, optional
+        set a model based on LLM provider, by default None
+    group : str | Iterable, optional
+         Which group, by default None
+    base_url : str | None, optional
+        customized LLM API url, by default None
+    rm_genes : bool, optional
+        remove rb and mt genes, by default True
+
+    Returns
+    -------
+    None
+    """
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
+    ot = ul.Outputor(out)
+    ot.write("# Biological Process Analysis")
+    ot.write("GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use")
+
+    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        futures = {}
+        for k, genes in gene_dic.items():
+            agent = Agent(model=model, provider=provider, sys_prompt=None, base_url=base_url)
+            query_txt = BIO_PROCESS_PROMPT.format(geneset=" ".join(genes))
+            future = executor.submit(agent.query, query_txt)
+            futures[k] = future
+        for k, future in futures.items():
+            reps = future.result()
+            ot.write(f"## cluster geneset {k}\n")
+            ot.write(f"{reps}\n")
