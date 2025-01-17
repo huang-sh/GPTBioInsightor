@@ -103,7 +103,7 @@ def get_celltype(
             reps = future.result()
             ot.write(f"## cluster geneset {k}\n")
             ot.write(f"### Gene List\n")
-            ot.write(f"Top genes\n```\n{','.join(gene_dic[k])}```\n")
+            ot.write(f"Top genes\n```\n{','.join(gene_dic[k])}\n```\n")
             ot.write(f"enrichment pathway\n```\n{pathway_txt_dic[k]}```\n")
             ot.write("### celltype thinking\n")
             ot.write(reps[0])
