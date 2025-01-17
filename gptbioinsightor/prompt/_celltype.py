@@ -137,12 +137,12 @@ Marker Profile (60 pts) // common and classical marker will get high score
 - Matching celltype markers present: max 45   // e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
 - Narrow markers of celltype present: max 15  // e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
 - Share common markers with other cell types or state: -10
-- Negative markers absent: -30
+- Negative markers present: -30
 
 Pathway Profile (20 pts)
 - Enriched pathways match cell state: 15
 - Enriched pathways match cell type: 5
-- shared Pathway with other cell types: -10
+- Shared Pathway with other cell types: -10
 - conflicting pathways: -20
 
 Biological Context (20 pts)
@@ -156,7 +156,7 @@ Marker Profile (70 pts)  // commson and classical marker will get high score
 - Matching celltype markers present: max 50   // For example, if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
 - Narrow markers of celltype present: max 20  //For example, if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
 - Share common markers with other cell types or state: -15
-- Negative markers absent: -30
+- Negative markers present: -30
 
 Biological Context (30 pts)
 - Plausible cell type in Context: 15
