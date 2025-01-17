@@ -304,7 +304,13 @@ Please list the most likely and common cell types to be identified in actual scR
 PRE_CELLTYPE_MERGE_PROMPT = """
 <Task>
 Based on the previous three conversation, integrate all above three answers(cell types and states).
-Output result using follow format(without any additional words or string):
+Output result using response_format(without any additional words, string or tag):
+</Task>
+<Instruction>
+1. include previous all cell types and states information
+2. correct and exclude unreasonable cell types and states, focus on Biological_context and Geneset
+3. provide classical gene markers(does not need to be in the Input geneset) for each celltype in your output 
+</Instruction>
 <response_format>
 Candidate celltype:
 [celltype1]: [classical marker]
@@ -318,11 +324,4 @@ celltype2: classical marker
    - ...
 ......
 </response_format>
-</Task>
-<Instruction>
-1. include previous all cell types and states information
-2. correct and exclude unreasonable cell types and states, focus on Biological_context and Geneset
-3. provide classical gene markers(does not need to be in the Input geneset) for each celltype in your output 
-</Instruction>
-
 """
