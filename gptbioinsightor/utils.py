@@ -143,7 +143,7 @@ def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap='viridis'):
     import matplotlib.pyplot as plt
     
     df = pd.DataFrame(score_dic).T.apply(pd.to_numeric)
-    df = df[df > cutoff].dropna(axis=1, how='all') 
+    df = df[df >= cutoff].dropna(axis=1, how='all') 
     plt.figure(figsize=figsize)
     base_size = min(figsize) * 2   
     font_size = max(base_size / max(df.shape), 8) 
