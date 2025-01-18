@@ -312,8 +312,9 @@ Output result using response_format(without any additional words, string or tag)
 </Task>
 <Instruction>
 1. include previous all cell types and states information
-2. correct and exclude unreasonable cell types and states, focus on Biological_context and Geneset
-3. provide classical gene markers(does not need to be in the Input geneset) for each celltype in your output 
+2. if there are any common cell types or states that have not been mentioned, please add them.
+3. correct and exclude unreasonable cell types and states, focus on Biological_context and Geneset
+4. provide classical gene markers(does not need to be in the Input geneset) for each celltype in your output 
 </Instruction>
 <response_format>
 Candidate celltype:
