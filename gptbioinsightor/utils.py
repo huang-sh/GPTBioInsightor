@@ -165,12 +165,12 @@ def unify_name(dic, model, provider=None, base_url=None):
         '1': {'T Cells': '85', 'NK Cells': '25', 'Dendritic Cells': '5'}
     }
     """
-    correct_txt = "If there is something format error,like {'1': 'Platelets: 44'}, also correct it like:  {'1': {'Platelets': '44'}}"
+    correct_txt = "If there is something format error,like {'1': 'Platelets: 44'}, also correct it as  {'1': {'Platelets': '44'}}"
     text = f"""
     ```JSON
     {str(dic)}
     ```
-    Unify the cell type names in this JSON data, using the same term to represent the same cell type. 
+    Unify the cell type names in this JSON data, using the same format and term to represent the same cell type.
     {correct_txt}
     Only return the corrected JSON format data,without any additional characters or text, such as "", ```or ', like:
 
@@ -182,6 +182,5 @@ def unify_name(dic, model, provider=None, base_url=None):
         new_dic = eval(new_dic_str)
     except:
         print("Failed to unify the cell type names")
-    finally:
         new_dic = dic
     return new_dic
