@@ -46,3 +46,13 @@ def test_set_api_key():
     utils.set_api_key("meta_api_key", provider="meta")
     meta_key = os.getenv("META_API_KEY")
     assert meta_key == "meta_api_key"
+
+
+def test_unify_name():
+    dic = {
+        "0": {"Natural Killer Cells ": "85"},
+        "1": "NK Cell: 80"
+
+    }
+    new_dic = utils.unify_name(dic, "deepseek:deepseek-chat", provider=None, base_url=None)
+    assert list(new_dic["0"].keys())[0] == list(new_dic["1"].keys())[0]
