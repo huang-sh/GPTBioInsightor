@@ -49,7 +49,11 @@ CELLTYPE_PROMPT = """
 </INSTRUCTIONS>
 <Reminder>
 Focus on existing evidence, Top DEGs are selected for Input Geneset, so Geneset contain limited genes and do not use the lack of classic markers as the basis for your reasoning.
-But make reasonable inferential extensions, such as transcription factor regulation, gene interactions, and other plausible speculations.
+But make reasonable inferential extensions, such as :
+- transcription factor regulation
+- gene interactions
+- metabolic characteristics
+- and other plausible speculations.
 </Reminder>
 <Input>
   <biological_context>
@@ -134,15 +138,15 @@ Output Format (high socre celltype appear first), without any additional prompt 
 CELLTYPE_SCORE = """
 <Scoring_Criteria_with_pathway>
 Marker Profile (60 pts) // common and classical marker will get high score
-- Matching celltype markers present: max 45   // e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
-- Narrow markers of celltype present: max 15  // e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
-- Share common markers with other cell types or state: -10
+- Matching cell type or state markers present: max 45   // e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
+- Narrow markers of cell type or state present: max 15  // e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
+- Share common markers with other cell type or state: -10
 - Negative markers present: -30
 
 Pathway Profile (20 pts)
 - Enriched pathways match cell state: 15
 - Enriched pathways match cell type: 5
-- Shared Pathway with other cell types: -10
+- Shared Pathway with other cell type or state: -10
 - conflicting pathways: -20
 
 Biological Context (20 pts)
@@ -153,9 +157,9 @@ Biological Context (20 pts)
 
 <Scoring_Criteria_without_pathway>
 Marker Profile (70 pts)  // commson and classical marker will get high score
-- Matching celltype markers present: max 50   // For example, if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
-- Narrow markers of celltype present: max 20  //For example, if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
-- Share common markers with other cell types or state: -15
+- Matching cell type or state markers present: max 50   // For example, if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
+- Narrow markers of cell type or state present: max 20  //For example, if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
+- Share common markers with other cell type or state: -15
 - Negative markers present: -30
 
 Biological Context (30 pts)
