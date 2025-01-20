@@ -1,4 +1,4 @@
-from gptbioinsightor.celltype import get_celltype, get_subtype
+from gptbioinsightor.celltype import get_celltype, get_subtype, get_cellstate
 from gptbioinsightor.prompt import SYSTEM_PROMPT
 import os
 import pytest
@@ -29,3 +29,13 @@ def test_get_subtype(provider, model):
     subtype_dic = get_subtype(gene_dic, celltype="monocyte",background=background, provider=provider, model=model,base_url=base_url)
     if model in MODEL_LIST:
         assert ["gs1", "gs2"] == list(subtype_dic.keys())
+
+
+def test_get_cellstate(provider, model):
+    gene_dic = {
+        "gs1": ["CD14", "S100A8", "S100A9", "LYZ", "FCN1", " TYROBP"],
+        "gs2": ["FCGR3A", "MS4A7", "CDKN1C", "CKB", "LILRA3", "IFITM3"]
+        }
+    background = "Human blood"
+    get_cellstate(gene_dic, background=background, provider=provider, model=model)
+ 
