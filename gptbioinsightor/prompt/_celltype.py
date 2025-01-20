@@ -82,8 +82,7 @@ Output Format (high socre celltype appear first), without any additional prompt 
 [Cell state inferring]
 
 **Key Markers**:
-- Cell-type-specific: [CELL-SPECIFIC MARKERS]
-- Cell-state-specific: [STATE-SPECIFIC MARKERS] 
+- Cell-type-specific: [CELL-SPECIFIC MARKERS]                   
 
 **Evidence and Reasoning** // combine gene marker, enrichment pathway and Cell Origin, >120 words
 - [PRIMARY EVIDENCE]
@@ -329,4 +328,26 @@ celltype2: classical marker
    - ...
 ......
 </response_format>
+"""
+
+
+
+CELLSTATE_PROMPT = """
+<Input>
+  <Celltype>
+    {celltype}
+  </Celltype>
+  <biological_context>
+    {background}
+  </biological_context>    
+  <Geneset>
+    {gene} 
+  </Geneset>
+  <Pathway>
+    {pathway}
+  </Pathway>
+</Input>
+<Task>
+As BioInsightor, please predict the cell state of Input Celltype according to biological_context, Geneset and Pathway  // If you provide a comprehensive and professional analysis, you will publish articles in Cell/Nature/Science
+</Task>
 """
