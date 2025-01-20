@@ -13,7 +13,7 @@
    get_celltype
    get_subtype
    check_celltype
-   list_celltypes
+   list_celltype
    get_cellstate
 ```
 
