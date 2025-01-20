@@ -1,4 +1,4 @@
-from .celltype import get_celltype, get_subtype, check_celltype
+from .celltype import get_celltype, get_subtype, check_celltype, get_cellstate
 from .pathway import depict_pathway, name_pathway, analyse_pathway
 from .core import query_model, Agent
 from .gsea import enrich
