@@ -193,7 +193,7 @@ def get_subtype(
     res_content = response.strip("```").strip("'''")
     ot.write(res_content)
     ot.close()
-    subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")]
+    subtype_ls = [line.split(":")[1].strip() for line in res_content.split("\n") if line.startswith("###")][-len(gene_dic):]
 
     if len(gene_dic.keys()) == len(subtype_ls):
         subtype_dic = {k:subtype_ls[idx] for idx, k in enumerate(gene_dic.keys())}
