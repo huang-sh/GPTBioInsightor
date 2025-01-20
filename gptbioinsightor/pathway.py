@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 
-from .prompt import PATHWAY_NAMING,LANG_PROMPT,LANG_PROMPT,BIO_PROCESS_PROMPT
+from .prompt import *
 from . import utils as ul
 from .core import query_model, Agent
 from .constant import LANG_DIC
-
+from anndata import AnnData
 
 def _query_pathway(queryid, pathways, celltype, background, provider, model, base_url, sys_prompt, lang):
     language = lang if lang not in LANG_DIC else LANG_DIC[lang]
