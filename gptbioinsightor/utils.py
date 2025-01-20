@@ -109,7 +109,7 @@ class Outputor:
             self.handle.close()
 
 # @lru_cache(maxsize=500)
-def list_celltypes(num, background, provider, model, base_url, sys_prompt):
+def list_celltype(num, background, provider, model, base_url, sys_prompt):
     from .core import Agent
     from .prompt import PRE_CELLTYPE_PROMPT1, PRE_CELLTYPE_PROMPT2, PRE_CELLTYPE_MERGE_PROMPT
     from concurrent.futures import ThreadPoolExecutor

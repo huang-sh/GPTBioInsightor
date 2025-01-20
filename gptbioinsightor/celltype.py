@@ -69,7 +69,7 @@ def get_celltype(
     for ck, genes in gene_dic.items():
         genes_ls.append(f"   - cluster {ck}: {','.join(genes[:topnumber])}")
     all_gene_txt = "\n".join(genes_ls)
-    chat_msg = ul.list_celltypes(len(gene_dic), background, provider, model, base_url, sys_prompt)
+    chat_msg = ul.list_celltype(len(gene_dic), background, provider, model, base_url, sys_prompt)
     ot = ul.Outputor(out)
     ot.write("# CellType Analysis")
     ot.write("GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use")
