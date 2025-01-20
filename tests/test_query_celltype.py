@@ -1,4 +1,4 @@
-from gptbioinsightor.celltype import _query_celltype, get_celltype, get_subtype
+from gptbioinsightor.celltype import get_celltype, get_subtype
 from gptbioinsightor.prompt import SYSTEM_PROMPT
 import os
 import pytest
@@ -6,16 +6,6 @@ import pytest
 
 base_url=None
 MODEL_LIST = pytest.MODEL_LIST
-
-def test_query_celltype(provider, model):
-    genes = ["CD19", "MS4A1", "CD79A", "CD79", "CCR7"]
-    queryid = "TEST_GENE_SET"
-    background = "Human blood"
-    gene_txt = f"cluster 0: {','.join(genes)}"
-    content = _query_celltype(queryid, genes, 1, background, provider, model, base_url, SYSTEM_PROMPT)
-    if model in MODEL_LIST:
-        assert "B" in content
-
 
 def test_get_celltype(provider, model):
     gene_dic = {
@@ -25,11 +15,9 @@ def test_get_celltype(provider, model):
     celltype_dic = get_celltype(gene_dic, background=background,
                     provider=provider, model=model,base_url=base_url)
     
-    celltype_ls = list(celltype_dic.values())
-    print(celltype_dic)
     if model in MODEL_LIST:
-        assert "B" in celltype_ls[0]
-        assert "T" in celltype_ls[1]
+        assert "B" in list(celltype_dic["gs1"].keys())[0]
+        assert "T" in list(celltype_dic["gs2"].keys())[0]
 
 
 def test_get_subtype(provider, model):
@@ -38,6 +26,6 @@ def test_get_subtype(provider, model):
         "gs2": ["FCGR3A", "MS4A7", "CDKN1C", "CKB", "LILRA3", "IFITM3"]
         }
     background = "Human blood"
-    subtype_dic = get_subtype(gene_dic, background=background, provider=provider, model=model,base_url=base_url)
+    subtype_dic = get_subtype(gene_dic, celltype="monocyte",background=background, provider=provider, model=model,base_url=base_url)
     if model in MODEL_LIST:
         assert ["gs1", "gs2"] == list(subtype_dic.keys())
