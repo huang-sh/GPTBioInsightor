@@ -13,6 +13,8 @@
    get_celltype
    get_subtype
    check_celltype
+   list_celltypes
+   get_cellstate
 ```
 
 
@@ -23,4 +25,17 @@
    :toctree: ./generated
 
    depict_pathway
+   name_pathway
+   analyse_pathway
+```
+
+## utilities
+
+```{eval-rst}
+.. autosummary::
+   :toctree: ./generated
+
+   score_heatmap
+   get_marker_from_seurat
+   set_api_key
 ```
