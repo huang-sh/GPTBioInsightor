@@ -118,10 +118,7 @@ def list_celltypes(num, background, provider, model, base_url, sys_prompt):
     query_num = 3
     text = PRE_CELLTYPE_PROMPT1.format(num=num, background=background)
     agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
-    agent.repeat_query(text, n=3)
-    # for i in agent.history:
-    #     if i["role"] == "assistant":
-    #         print(i["content"])
+    agent.repeat_query(text, n=3, use_context=False)
     chat_msg = [
         {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)}, 
         {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}
