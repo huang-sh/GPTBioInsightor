@@ -181,3 +181,14 @@ def unify_name(dic, model, provider=None, base_url=None):
         print("Failed to unify the cell type names")
         new_dic = dic
     return new_dic
+
+
+def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
+    new_dic = {}
+    for key, cell_dict in score_dic.items():
+        max_cell = max(cell_dict, key=lambda k: float(cell_dict[k]))
+        new_dic[key] = max_cell
+    adata.obs[add_key] = adata.obs[cluster_key].map(
+        new_dic
+    )
+    return adata
