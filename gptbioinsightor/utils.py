@@ -10,7 +10,7 @@ import pandas as pd
 from anndata import AnnData
 
 from .exception import ApiKeyMissingError
-
+from .constant import API_SOURCE
 
 def get_marker_from_seurat(path: str | Path) -> dict:
     """\
@@ -52,7 +52,12 @@ def parse_model(provider, model):
         items = model.split(":")
         provider = items[0]
         model = ":".join(items[1:])
-    return provider, model
+    base_url = API_SOURCE[provider]
+    if provider == "ollama":
+        OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+        if OLLAMA_HOST is not None:
+            base_url = os.getenv("OLLAMA_HOST")
+    return model, base_url
 
 
 def get_api_key(provider=None):

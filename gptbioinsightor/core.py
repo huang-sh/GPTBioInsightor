@@ -5,17 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 from .prompt import SYSTEM_PROMPT
-from .constant import API_SOURCE
 from .utils import get_api_key, parse_model
 from .exception import APIStatusError, ApiBalanceLow
 
 
-def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None, temperature=0.5):
+def openai_client(msgs, apikey, model, base_url=None, sys_prompt=None, temperature=0.5):
     from openai import OpenAI
     
-    if base_url is None:
-        base_url = API_SOURCE[provider]
-
     client = OpenAI(
         api_key= apikey, 
         base_url=base_url
@@ -30,7 +26,6 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
     else:
         query_msgs = [{"role": "system", "content": sys_prompt}] + list(msgs)
     try:
-
         response = client.chat.completions.create(
             model=model,
             messages=query_msgs,
@@ -39,7 +34,7 @@ def openai_client(msgs, apikey, model, provider, base_url=None, sys_prompt=None,
         if response.choices[0].finish_reason != "stop":
             print("finish_reason: ", response.choices[0].finish_reason)
     except APIStatusError as e:
-        raise ApiBalanceLow(provider, e.message, e.response, e.body)
+        raise ApiBalanceLow(base_url, e.message, e.response, e.body)
         
     return response.choices[0].message.content
 
@@ -80,14 +75,12 @@ def anthropic_client(msgs, model, apikey, sys_prompt=None, temperature=0.5):
 
 def query_model(msgs, provider, model, base_url=None, sys_prompt=None, temperature=None):
     if base_url is None:
-        provider, model = parse_model(provider, model)
-    else:
-        provider, model = None, model
+        model, base_url = parse_model(provider, model)
     API_KEY = get_api_key(provider)
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)
     else:
-        content = openai_client(msgs, API_KEY, model, provider, base_url=base_url, sys_prompt=sys_prompt, temperature=temperature)
+        content = openai_client(msgs, API_KEY, model, base_url=base_url, sys_prompt=sys_prompt, temperature=temperature)
     return content
 
 
