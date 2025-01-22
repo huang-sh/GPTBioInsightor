@@ -13,6 +13,7 @@ API_SOURCE = {
     "perplexity": "https://api.perplexity.ai",
     "azure": "https://models.inference.ai.azure.com",
     "github": "https://models.inference.ai.azure.com",
+    "ollama": "http://localhost:11434/v1"
 }
 
 LANG_DIC = {
