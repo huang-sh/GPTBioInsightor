@@ -62,6 +62,8 @@ def parse_model(provider, model):
 
 def get_api_key(provider=None):
     if provider is not None:
+        if provider == "ollama":
+            API_KEY = "ollama"
         API_KEY = os.getenv(f"{provider.upper()}_API_KEY")
         if API_KEY is None:
             API_KEY = os.getenv("API_KEY")
