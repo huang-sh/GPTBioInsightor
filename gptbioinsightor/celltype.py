@@ -10,6 +10,7 @@ from anndata import AnnData
 from .core import query_model, Agent
 from . import utils as ul
 from .prompt import *
+from .structure import extract_score
 
 
 def get_celltype(
@@ -111,14 +112,8 @@ def get_celltype(
             ot.write(reps[1])
             ot.write("### Report\n")
             ot.write(reps[2])
-            score_dic[k] = {}
-            for cs in reps[1].strip().split("\n")[-3:]:
-                try:
-                    ct, score = cs.split(":")
-                    score_dic[k][ct.strip()] = score.strip()
-                except:
-                    print(cs)
-                    score_dic[k] = cs
+            score_ls = extract_score(reps[1], provider, model, base_url).score_ls
+            score_dic[k] = {i[0]: i[1] for i in score_ls}
     score_dic = ul.unify_name(score_dic, model, provider, base_url)
     return score_dic
 
