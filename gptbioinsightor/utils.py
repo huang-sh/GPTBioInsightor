@@ -47,17 +47,21 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
     return gene_dic
 
 
-def parse_model(provider, model):
-    if provider is None:
-        items = model.split(":")
-        provider = items[0]
-        model = ":".join(items[1:])
-    base_url = API_SOURCE[provider]
+def parse_api(provider, model, base_url):
     if provider == "ollama":
         OLLAMA_HOST = os.getenv("OLLAMA_HOST")
         if OLLAMA_HOST is not None:
             base_url = os.getenv("OLLAMA_HOST")
-    return model, base_url
+        else:
+            base_url = API_SOURCE[provider]
+    elif provider is not None:
+        base_url = API_SOURCE[provider]
+    else:
+        items = model.split(":")
+        provider = items[0]
+        model = ":".join(items[1:])
+        base_url = API_SOURCE[provider]
+    return provider, model, base_url
 
 
 def get_api_key(provider=None):
@@ -199,3 +203,4 @@ def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
         new_dic
     )
     return adata
+ 
