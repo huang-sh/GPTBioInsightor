@@ -8,9 +8,9 @@ def test_get_marker_from_seurat():
 
 
 def test_parse_model():
-    assert ("gpt-4o", "https://api.openai.com/v1/") == utils.parse_model("openai", "gpt-4o")
-    assert ("gpt-4o", "https://api.openai.com/v1/") == utils.parse_model(None, "openai:gpt-4o")
-    assert ("openai/gpt-4o:beta", "https://openrouter.ai/api/v1") == utils.parse_model(None, "openrouter:openai/gpt-4o:beta")
+    assert ("openai", "gpt-4o", "https://api.openai.com/v1/") == utils.parse_api("openai", "gpt-4o", "https://api.openai.com/v1/")
+    assert ("openai", "gpt-4o", "https://api.openai.com/v1/") == utils.parse_api(None, "openai:gpt-4o", "https://api.openai.com/v1/")
+    assert ("openrouter", "openai/gpt-4o:beta", "https://openrouter.ai/api/v1") == utils.parse_api(None, "openrouter:openai/gpt-4o:beta", "https://openrouter.ai/api/v1")
 
 def test_get_gene_dict():
     topnumber = 15

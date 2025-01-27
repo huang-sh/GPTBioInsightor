@@ -17,7 +17,10 @@ frozendict = "^2.4.0"
 gseapy = "^1.1.0"
 instructor = "^1.7.0"
 litellm = "1.57.0"
+ 
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
 
 [build-system]
 requires = ["poetry-core"]
