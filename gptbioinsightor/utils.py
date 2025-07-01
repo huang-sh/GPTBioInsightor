@@ -151,7 +151,7 @@ def list_celltype(num, background, provider, model, base_url, sys_prompt):
 def agent_pipe(agent, pct_txt):
     from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
 
-    # pre_res = agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
+    agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
     scores = agent.query(
         CELLTYPE_SCORE, use_context=True, add_context=True, use_cache=False
     )
