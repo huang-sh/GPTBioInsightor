@@ -1,27 +1,31 @@
-[tool.poetry]
+[project]
 name = "gptbioinsightor"
 version = "0.7.0a1"
 description = "GPTBioInsightor utilizes the powerful capabilities of large language models to help people quickly gain knowledge and insight, enhancing their work efficiency."
-authors = ["Shenghui Huang <hsh-me@outlook.com>"]
-license = "BSD 3-Clause"
+authors = [{ name = "Shenghui Huang", email = "hsh-me@outlook.com" }]
+license = { text = "BSD 3-Clause" }
 readme = "README.md"
-homepage = "https://github.com/huang-sh/GPTBioInsightor"
-repository = "https://github.com/huang-sh/GPTBioInsightor"
+requires-python = ">=3.9"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-openai = "^1.31.0"
-scanpy = "^1.9.0"
-anthropic = "^0.33.0"
-frozendict = "^2.4.0"
-gseapy = "^1.1.0"
-instructor = "^1.7.0"
-litellm = "1.57.0"
- 
+dependencies = [
+    "openai>=1.31.0",
+    "scanpy>=1.9.0",
+    "anthropic>=0.33.0",
+    "frozendict>=2.4.0",
+    "gseapy>=1.1.0",
+    "instructor>=1.7.0",
+    "litellm==1.57.0"
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.3"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3"
+]
+
+[project.urls]
+Homepage = "https://github.com/huang-sh/GPTBioInsightor"
+Repository = "https://github.com/huang-sh/GPTBioInsightor"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
