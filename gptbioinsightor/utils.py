@@ -197,7 +197,7 @@ def unify_name(dic, model, provider=None, base_url=None):
         '1': {'T Cells': '85', 'NK Cells': '25', 'Dendritic Cells': '5'}
     }
     """
-    correct_txt = "If there is something format error,like {'1': 'Platelets: 44'}, also correct it as  {'1': {'Platelets': '44'}}"
+    correct_txt = "eg. if you meet Dendritic Cells, DC, Dendritic Cell, you should correct them as one same name, such as DCs"
     text = f"""
     ```JSON
     {str(dic)}
