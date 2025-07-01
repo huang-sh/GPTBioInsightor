@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from functools import lru_cache
 
 import scanpy as sc
 import pandas as pd
@@ -11,6 +10,7 @@ from anndata import AnnData
 
 from .exception import ApiKeyMissingError
 from .constant import API_SOURCE
+
 
 def get_marker_from_seurat(path: str | Path) -> dict:
     """\
@@ -27,7 +27,7 @@ def get_marker_from_seurat(path: str | Path) -> dict:
         gene marker dict
     """
     df = pd.read_csv(path)
-    marker_dict = df.groupby('cluster', observed=True)['gene'].agg(list).to_dict()
+    marker_dict = df.groupby("cluster", observed=True)["gene"].agg(list).to_dict()
     return marker_dict
 
 
@@ -41,7 +41,11 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
         gene_dic = input.copy()
     if rm_genes:
         for k in gene_dic.keys():
-            gene_dic[k] = [g for g in gene_dic[k] if not g.startswith(('MT-', 'RPL', 'RPS', "ENSG"))]
+            gene_dic[k] = [
+                g
+                for g in gene_dic[k]
+                if not g.startswith(("MT-", "RPL", "RPS", "ENSG"))
+            ]
     for k in gene_dic.keys():
         gene_dic[k] = gene_dic[k][:topnumber]
     return gene_dic
@@ -74,7 +78,9 @@ def get_api_key(provider=None):
     else:
         API_KEY = os.getenv("API_KEY")
     if API_KEY is None:
-        raise ApiKeyMissingError(f"Note: API key not found, please set {provider.upper()}_API_KEY or API_KEY")
+        raise ApiKeyMissingError(
+            f"Note: API key not found, please set {provider.upper()}_API_KEY or API_KEY"
+        )
     return API_KEY
 
 
@@ -102,7 +108,7 @@ def get_celltype_name(text):
                 return line.split(":")[1]
             except IndexError:
                 print("LLM doesn't output result accroding predefined format")
-         
+
 
 class Outputor:
     def __init__(self, path: str | Path | None = None) -> None:
@@ -111,60 +117,78 @@ class Outputor:
             self.handle = sys.stdout
         else:
             self.handle = open(self.path, "w", encoding="utf-8")
-            
+
     def write(self, text):
         print(text, file=self.handle)
-    
+
     def close(self):
-        if self.path is not None: 
+        if self.path is not None:
             self.handle.close()
+
 
 # @lru_cache(maxsize=500)
 def list_celltype(num, background, provider, model, base_url, sys_prompt):
     from .core import Agent
-    from .prompt import PRE_CELLTYPE_PROMPT1, PRE_CELLTYPE_PROMPT2, PRE_CELLTYPE_MERGE_PROMPT
-    from concurrent.futures import ThreadPoolExecutor
-    from functools import partial
+    from .prompt import (
+        PRE_CELLTYPE_PROMPT1,
+        PRE_CELLTYPE_PROMPT2,
+        PRE_CELLTYPE_MERGE_PROMPT,
+    )
 
-    query_num = 3
+    # query_num = 3
     text = PRE_CELLTYPE_PROMPT1.format(num=num, background=background)
-    agent = Agent(model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url)
+    agent = Agent(
+        model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url
+    )
     agent.repeat_query(text, n=3, use_context=False)
     chat_msg = [
-        {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)}, 
-        {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)}
+        {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)},
+        {"role": "assistant", "content": agent.query(PRE_CELLTYPE_MERGE_PROMPT)},
     ]
     return chat_msg
 
 
 def agent_pipe(agent, pct_txt):
     from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
-    pre_res = agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
-    scores = agent.query(CELLTYPE_SCORE, use_context=True, add_context=True, use_cache=False)
+
+    # pre_res = agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
+    scores = agent.query(
+        CELLTYPE_SCORE, use_context=True, add_context=True, use_cache=False
+    )
     report_prompt = CELLTYPE_REPORT.format(score=scores)
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
 
 
-def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap='viridis'):
+def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap="viridis"):
     import seaborn as sns
     import matplotlib.pyplot as plt
-    
+
     df = pd.DataFrame(score_dic).T.apply(pd.to_numeric)
-    df = df[df >= cutoff].dropna(axis=1, how='all') 
+    df = df[df >= cutoff].dropna(axis=1, how="all")
     plt.figure(figsize=figsize)
-    base_size = min(figsize) * 2   
-    font_size = max(base_size / max(df.shape), 8) 
-    heatmap = sns.heatmap(df, annot=True, cmap=cmap, fmt='g', linewidths=0.5, annot_kws={"size": font_size})
-    heatmap.set_xticklabels(heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
-    plt.title('CellType Score Heatmap')
-    plt.xlabel('CellTypes')
-    plt.ylabel('Cluster')
+    base_size = min(figsize) * 2
+    font_size = max(base_size / max(df.shape), 8)
+    heatmap = sns.heatmap(
+        df,
+        annot=True,
+        cmap=cmap,
+        fmt="g",
+        linewidths=0.5,
+        annot_kws={"size": font_size},
+    )
+    heatmap.set_xticklabels(
+        heatmap.get_xticklabels(), rotation=45, ha="right", fontsize=12
+    )
+    plt.title("CellType Score Heatmap")
+    plt.xlabel("CellTypes")
+    plt.ylabel("Cluster")
     return heatmap
 
 
 def unify_name(dic, model, provider=None, base_url=None):
     from .core import Agent
+
     agent = Agent(model=model, provider=provider, sys_prompt=None, base_url=base_url)
 
     fmt_demo = """
@@ -178,17 +202,19 @@ def unify_name(dic, model, provider=None, base_url=None):
     ```JSON
     {str(dic)}
     ```
-    Unify the cell type names in this JSON data, using the same format and term to represent the same cell type.
+    Unify the cell type names in this JSON data, using the same format and term or name to represent the same cell type.
     {correct_txt}
     Only return the corrected JSON format data,without any additional characters or text, such as "", ```or ', like:
 
     {fmt_demo}
 
     """
-    new_dic_str = agent.query(text, use_context=False, add_context=False, use_cache=True)
+    new_dic_str = agent.query(
+        text, use_context=False, add_context=False, use_cache=True
+    )
     try:
         new_dic = eval(new_dic_str)
-    except:
+    except Exception:
         print("Failed to unify the cell type names")
         new_dic = dic
     return new_dic
@@ -199,8 +225,5 @@ def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
     for key, cell_dict in score_dic.items():
         max_cell = max(cell_dict, key=lambda k: float(cell_dict[k]))
         new_dic[key] = max_cell
-    adata.obs[add_key] = adata.obs[cluster_key].map(
-        new_dic
-    )
+    adata.obs[add_key] = adata.obs[cluster_key].map(new_dic)
     return adata
- 
