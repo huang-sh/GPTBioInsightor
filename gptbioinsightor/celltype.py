@@ -142,7 +142,7 @@ def get_celltype(
             ot.write("### Report\n")
             ot.write(reps[2])
             score_ls = extract_score(reps[1], provider, model, base_url).score_ls
-            score_dic[k] = {i[0]: i[1] for i in score_ls}
+            score_dic[k] = {entry.celltype: entry.score for entry in score_ls}
             logger.info("Finished scoring cluster %s.", k)
     score_dic = ul.unify_name(score_dic, model, provider, base_url)
     logger.info("Cell type identification completed successfully.")

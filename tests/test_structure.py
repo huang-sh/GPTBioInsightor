@@ -1,5 +1,6 @@
 from gptbioinsightor import structure
 
+
 def test_extract_score(provider, model):
     text_txt = """
     ```thinking
@@ -10,4 +11,4 @@ def test_extract_score(provider, model):
     cancer cell: 0
     """
     score_dic = structure.extract_score(text_txt, provider, model, None)
-    assert score_dic.score_ls[0][1] == 100
+    assert score_dic.score_ls[0].score == 100
