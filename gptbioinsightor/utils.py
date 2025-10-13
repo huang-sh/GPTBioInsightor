@@ -148,16 +148,24 @@ def list_celltype(num, background, provider, model, base_url, sys_prompt):
     return chat_msg
 
 
-def agent_pipe(agent, pct_txt):
+def agent_pipe(agent, pct_txt, score_prompt: str | None = None):
     from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
 
     agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
+    score_instruction = CELLTYPE_SCORE if score_prompt is None else score_prompt
     scores = agent.query(
-        CELLTYPE_SCORE, use_context=True, add_context=True, use_cache=False
+        score_instruction, use_context=True, add_context=True, use_cache=False
     )
     report_prompt = CELLTYPE_REPORT.format(score=scores)
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
+
+
+def get_score_prompt() -> str:
+    """Return the default scoring prompt used for cell type evaluation."""
+    from .prompt import CELLTYPE_SCORE
+
+    return CELLTYPE_SCORE
 
 
 def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap="viridis"):
