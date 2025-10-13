@@ -10,7 +10,9 @@ from .utils import (
     list_celltype,
     score_heatmap,
     add_obs,
+    get_score_prompt,
 )
+from .logging_utils import configure_logging, logger
 
 
 __version__ = "0.7.0"
@@ -20,6 +22,7 @@ __all__ = [
     "get_subtype",
     "check_celltype",
     "get_cellstate",
+    "get_score_prompt",
     "depict_pathway",
     "name_pathway",
     "analyse_pathway",
@@ -31,5 +34,8 @@ __all__ = [
     "list_celltype",
     "score_heatmap",
     "add_obs",
+    "get_score_prompt",
+    "configure_logging",
+    "logger",
     "utils",
 ]

@@ -10,6 +10,7 @@ from anndata import AnnData
 
 from .exception import ApiKeyMissingError
 from .constant import API_SOURCE
+from .logging_utils import logger
 
 
 def get_marker_from_seurat(path: str | Path) -> dict:
@@ -26,20 +27,29 @@ def get_marker_from_seurat(path: str | Path) -> dict:
     dict
         gene marker dict
     """
+    logger.info("Loading marker data from '%s'.", path)
     df = pd.read_csv(path)
     marker_dict = df.groupby("cluster", observed=True)["gene"].agg(list).to_dict()
+    logger.info("Loaded markers for %d clusters.", len(marker_dict))
     return marker_dict
 
 
 def get_gene_dict(input, group, key, topnumber, rm_genes):
     if isinstance(input, AnnData):
+        logger.info(
+            "Preparing gene dictionary from AnnData using group '%s' and key '%s'.",
+            group or "default",
+            key,
+        )
         deg_df = sc.get.rank_genes_groups_df(input, group=group, key=key)
         gene_dic = {}
         for gid, sdf in deg_df.groupby("group", observed=True):
             gene_dic[gid] = sdf["names"].tolist()
     elif isinstance(input, dict):
         gene_dic = input.copy()
+        logger.info("Using existing gene dictionary with %d entries.", len(gene_dic))
     if rm_genes:
+        logger.info("Filtering out mitochondrial and ribosomal genes.")
         for k in gene_dic.keys():
             gene_dic[k] = [
                 g
@@ -48,6 +58,7 @@ def get_gene_dict(input, group, key, topnumber, rm_genes):
             ]
     for k in gene_dic.keys():
         gene_dic[k] = gene_dic[k][:topnumber]
+    logger.info("Prepared gene dictionary with %d gene sets.", len(gene_dic))
     return gene_dic
 
 
@@ -115,8 +126,10 @@ class Outputor:
         self.path = path
         if self.path is None:
             self.handle = sys.stdout
+            logger.info("Streaming analysis output to standard output.")
         else:
             self.handle = open(self.path, "w", encoding="utf-8")
+            logger.info("Writing analysis output to '%s'.", self.path)
 
     def write(self, text):
         print(text, file=self.handle)
@@ -124,6 +137,7 @@ class Outputor:
     def close(self):
         if self.path is not None:
             self.handle.close()
+            logger.info("Saved analysis output to '%s'.", self.path)
 
 
 # @lru_cache(maxsize=500)
@@ -140,6 +154,12 @@ def list_celltype(num, background, provider, model, base_url, sys_prompt):
     agent = Agent(
         model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url
     )
+    logger.info(
+        "Requesting candidate cell types for %d clusters with provider '%s' and model '%s'.",
+        num,
+        provider or "default",
+        model or "default",
+    )
     agent.repeat_query(text, n=3, use_context=False)
     chat_msg = [
         {"role": "user", "content": PRE_CELLTYPE_PROMPT2.format(background=background)},
@@ -151,12 +171,15 @@ def list_celltype(num, background, provider, model, base_url, sys_prompt):
 def agent_pipe(agent, pct_txt, score_prompt: str | None = None):
     from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
 
+    logger.info("Generating detailed reasoning for current gene set.")
     agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
     score_instruction = CELLTYPE_SCORE if score_prompt is None else score_prompt
+    logger.info("Requesting scoring details based on the reasoning output.")
     scores = agent.query(
         score_instruction, use_context=True, add_context=True, use_cache=False
     )
     report_prompt = CELLTYPE_REPORT.format(score=scores)
+    logger.info("Compiling final cell type report segment.")
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
 
@@ -217,6 +240,7 @@ def unify_name(dic, model, provider=None, base_url=None):
     {fmt_demo}
 
     """
+    logger.info("Harmonizing cell type names provided by the language model.")
     new_dic_str = agent.query(
         text, use_context=False, add_context=False, use_cache=True
     )
@@ -225,10 +249,17 @@ def unify_name(dic, model, provider=None, base_url=None):
     except Exception:
         print("Failed to unify the cell type names")
         new_dic = dic
+    else:
+        logger.info("Cell type names have been unified successfully.")
     return new_dic
 
 
 def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
+    logger.info(
+        "Adding predicted cell types to AnnData.obs using key '%s' (source cluster key '%s').",
+        add_key,
+        cluster_key,
+    )
     new_dic = {}
     for key, cell_dict in score_dic.items():
         max_cell = max(cell_dict, key=lambda k: float(cell_dict[k]))
