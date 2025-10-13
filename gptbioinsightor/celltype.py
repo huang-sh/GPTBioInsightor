@@ -125,7 +125,11 @@ def get_celltype(
             )
             logger.info("Scoring cluster %s with %d genes.", k, len(genes))
             future = executor.submit(
-                ul.agent_pipe, agent, pct_txt, score_prompt=score_prompt
+                ul.agent_pipe,
+                agent,
+                pct_txt,
+                score_prompt=score_prompt,
+                cluster_id=k,
             )
             futures[k] = future
         score_dic = {}

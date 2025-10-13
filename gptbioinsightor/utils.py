@@ -168,18 +168,21 @@ def list_celltype(num, background, provider, model, base_url, sys_prompt):
     return chat_msg
 
 
-def agent_pipe(agent, pct_txt, score_prompt: str | None = None):
+def agent_pipe(agent, pct_txt, score_prompt: str | None = None, cluster_id=None):
     from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
 
-    logger.info("Generating detailed reasoning for current gene set.")
+    cluster_label = (
+        f"cluster {cluster_id}" if cluster_id is not None else "current gene set"
+    )
+    logger.info(f"Generating detailed reasoning for {cluster_label}.")
     agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
     score_instruction = CELLTYPE_SCORE if score_prompt is None else score_prompt
-    logger.info("Requesting scoring details based on the reasoning output.")
+    logger.info(f"Requesting scoring details for {cluster_label}.")
     scores = agent.query(
         score_instruction, use_context=True, add_context=True, use_cache=False
     )
     report_prompt = CELLTYPE_REPORT.format(score=scores)
-    logger.info("Compiling final cell type report segment.")
+    logger.info(f"Compiling final cell type report segment for {cluster_label}.")
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
 
