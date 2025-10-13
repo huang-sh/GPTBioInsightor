@@ -30,8 +30,15 @@ def extract_score(content, provider, model, base_url):
         provider or "default",
         model or "default",
     )
+    if provider == "meta_llama":
+        provider = "meta_llama"
+    elif provider == "azure":
+        provider = "azure_ai"
+    else:
+        provider = "openai"
+
     resp = client.chat.completions.create(
-        model=model,
+        model=f"{provider}/{model}" if provider else model,
         api_key=API_KEY,
         api_base=base_url,
         max_tokens=4000,
