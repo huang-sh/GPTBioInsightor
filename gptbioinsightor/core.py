@@ -1,21 +1,16 @@
 import os
-import hashlib
 from functools import lru_cache, partial
 from concurrent.futures import ThreadPoolExecutor
 
 
-from .prompt import SYSTEM_PROMPT
 from .utils import get_api_key, parse_api
 from .exception import APIStatusError, ApiBalanceLow
 
 
 def openai_client(msgs, apikey, model, base_url=None, sys_prompt=None, temperature=0.5):
     from openai import OpenAI
-    
-    client = OpenAI(
-        api_key= apikey, 
-        base_url=base_url
-    )
+
+    client = OpenAI(api_key=apikey, base_url=base_url)
     if model.startswith("o1"):
         sys_prompt = None
         kwargs = {}
@@ -27,45 +22,41 @@ def openai_client(msgs, apikey, model, base_url=None, sys_prompt=None, temperatu
         query_msgs = [{"role": "system", "content": sys_prompt}] + list(msgs)
     try:
         response = client.chat.completions.create(
-            model=model,
-            messages=query_msgs,
-            **kwargs
+            model=model, messages=query_msgs, **kwargs
         )
         if response.choices[0].finish_reason != "stop":
             print("finish_reason: ", response.choices[0].finish_reason)
     except APIStatusError as e:
         raise ApiBalanceLow(base_url, e.message, e.response, e.body)
-        
+
     return response.choices[0].message.content
 
 
 def anthropic_client(msgs, model, apikey, sys_prompt=None, temperature=0.5):
     import anthropic
 
-    client = anthropic.Anthropic(
-        api_key=apikey
-    )
+    client = anthropic.Anthropic(api_key=apikey)
     if sys_prompt is None:
-        sys_prompt = ''
+        sys_prompt = ""
     else:
         sys_prompt = [
-            {
-                "type": "text",
-                "text": sys_prompt,
-                "cache_control": {"type": "ephemeral"}
-            }
+            {"type": "text", "text": sys_prompt, "cache_control": {"type": "ephemeral"}}
         ]
 
-    if model in ["claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20240620", "claude-3-5-haiku-20241022"]:
+    if model in [
+        "claude-3-5-sonnet-20241022",
+        "claude-3-5-sonnet-20240620",
+        "claude-3-5-haiku-20241022",
+    ]:
         max_tokens = 8192
     else:
         max_tokens = 4096
     response = client.messages.create(
         model=model,
         system=sys_prompt,
-        max_tokens=max_tokens, 
+        max_tokens=max_tokens,
         temperature=temperature,
-        messages=msgs
+        messages=msgs,
     )
     if response.stop_reason != "end_turn":
         print("stop_reason: ", response.stop_reason)
@@ -73,13 +64,22 @@ def anthropic_client(msgs, model, apikey, sys_prompt=None, temperature=0.5):
     return content
 
 
-def query_model(msgs, provider, model, base_url=None, sys_prompt=None, temperature=None):
+def query_model(
+    msgs, provider, model, base_url=None, sys_prompt=None, temperature=None
+):
     provider, model, base_url = parse_api(provider, model, base_url)
     API_KEY = get_api_key(provider)
     if provider == "anthropic":
         content = anthropic_client(msgs, model, API_KEY, sys_prompt=sys_prompt)
     else:
-        content = openai_client(msgs, API_KEY, model, base_url=base_url, sys_prompt=sys_prompt, temperature=temperature)
+        content = openai_client(
+            msgs,
+            API_KEY,
+            model,
+            base_url=base_url,
+            sys_prompt=sys_prompt,
+            temperature=temperature,
+        )
     return content
 
 
@@ -99,17 +99,18 @@ def deep_freeze(thing):
     else:
         return thing
 
+
 def deep_freeze_args(func):
     import functools
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         return func(*deep_freeze(args), **deep_freeze(kwargs))
+
     return wrapped
 
 
 class Agent:
-
     def __init__(self, model=None, provider=None, sys_prompt=None, base_url=None):
         self.provider = provider
         self.model = model
@@ -117,9 +118,20 @@ class Agent:
         self.base_url = base_url
         self.history = []
         self._query_with_cache = deep_freeze_args(lru_cache(maxsize=500)(query_model))
-        self._query_without_cache = query_model 
+        self._query_without_cache = query_model
 
-    def query(self, text, use_context=True, add_context=True, use_cache=True, temperature=1):
+    def configure(self, provider=None, model=None, base_url=None):
+        """Update runtime configuration for downstream API calls."""
+        if provider is not None:
+            self.provider = provider
+        if model is not None:
+            self.model = model
+        if base_url is not None:
+            self.base_url = base_url
+
+    def query(
+        self, text, use_context=True, add_context=True, use_cache=True, temperature=1
+    ):
         if use_context:
             query_msg = self.history.copy()
         else:
@@ -136,17 +148,27 @@ class Agent:
             self.model,
             base_url=self.base_url,
             sys_prompt=self.sys_prompt,
-            temperature=temperature
+            temperature=temperature,
         )
         if add_context:
-            self.history.extend([
-                {"role": "user", "content": text}, 
-                {"role": "assistant", "content": response}
-            ])
+            self.history.extend(
+                [
+                    {"role": "user", "content": text},
+                    {"role": "assistant", "content": response},
+                ]
+            )
 
         return response
 
-    def _multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True, temperature=1):
+    def _multi_query(
+        self,
+        texts,
+        n_jobs=None,
+        use_context=True,
+        add_context=True,
+        use_cache=True,
+        temperature=1,
+    ):
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), len(texts))
 
@@ -155,36 +177,46 @@ class Agent:
             use_context=use_context,
             add_context=False,
             use_cache=use_cache,
-            temperature=temperature
+            temperature=temperature,
         )
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
-            results = list(executor.map(query_func , texts))
+            results = list(executor.map(query_func, texts))
         if add_context:
             for text, res in zip(texts, results):
                 self.create_conversation(text, res)
         return results
-    
-    def repeat_query(self, text, n=1, n_jobs=None, use_context=True, add_context=True, temperature=1):
+
+    def repeat_query(
+        self, text, n=1, n_jobs=None, use_context=True, add_context=True, temperature=1
+    ):
         if n_jobs is None:
             n_jobs = min(max(1, os.cpu_count() // 2), n)
         texts = [text] * n
         return self._multi_query(
-            texts, 
-            n_jobs=n_jobs, 
-            use_context=use_context, 
-            add_context=add_context, 
+            texts,
+            n_jobs=n_jobs,
+            use_context=use_context,
+            add_context=add_context,
             use_cache=False,  # We don't want to get same results when using repeated query
-            temperature=temperature
+            temperature=temperature,
         )
 
-    def multi_query(self, texts, n_jobs=None, use_context=True, add_context=True, use_cache=True, temperature=1):
+    def multi_query(
+        self,
+        texts,
+        n_jobs=None,
+        use_context=True,
+        add_context=True,
+        use_cache=True,
+        temperature=1,
+    ):
         return self._multi_query(
-            texts, 
-            n_jobs=n_jobs, 
-            use_context=use_context, 
+            texts,
+            n_jobs=n_jobs,
+            use_context=use_context,
             add_context=add_context,
             use_cache=use_cache,
-            temperature=temperature
+            temperature=temperature,
         )
 
     def update_context(self, message):
@@ -192,23 +224,41 @@ class Agent:
             self.history.append(message)
         elif isinstance(message, list):
             self.history.extend(message)
-    
+
     def get_history(self, role=None):
         if role is None:
             return self.history
         elif role in ["user", "assistant"]:
             return [msg["content"] for msg in self.history if msg["role"] == role]
-    
+
     def create_conversation(self, user_txt, assistant_txt):
         if self.provider == "anthropic":
             conversation = [
-                {"role": "user",  "content": [{"type": "text",  "text": user_txt, "cache_control": {"type": "ephemeral"}}]}, 
-                {"role": "assistant",  "content": [{"type": "text",  "text": assistant_txt, "cache_control": {"type": "ephemeral"}}]},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": user_txt,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                },
+                {
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": assistant_txt,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                },
             ]
         else:
             conversation = [
-                {"role": "user",  "content": user_txt}, 
-                {"role": "assistant",  "content": assistant_txt},
+                {"role": "user", "content": user_txt},
+                {"role": "assistant", "content": assistant_txt},
             ]
         self.history.extend(conversation)
         return conversation
