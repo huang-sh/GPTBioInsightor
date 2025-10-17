@@ -9,6 +9,8 @@ CELLTYPE_PROMPT = """
    Cell state:
       - experimental condition, dieseas and more
       - eg. Endothelial Cells within tumor tissue: active in neovascularization supporting tumor growth
+   Sample realism:
+      - consider preparation-related contaminants, residual populations, or technical artifacts (e.g. platelets frequently persist in PBMC isolations)
 
 2. Marker-Based Analysis: High Priority for Cell type prediction
 
@@ -35,6 +37,7 @@ CELLTYPE_PROMPT = """
       - Presence of definitive negative markers
       - Conflicting pathway patterns
       - Biologically implausible combinations
+      - Fully idealized interpretations that ignore realistic contaminant signatures
 
    Distinguishing Cell Types and Cell States:
       - Do not confuse cell state features(Marker, pathway) with cell type features.
@@ -54,6 +57,7 @@ But make reasonable inferential extensions, such as :
 - gene interactions
 - metabolic characteristics
 - and other plausible speculations.
+It should be noted that possible contaminants, residual populations, or technical artifacts may remain due to limitations in isolation, processing, or measurement. Treat these non-ideal components as potential minor confounders when forming conclusions rather than assuming a perfectly pure sample.
 </Reminder>
 <Input>
   <biological_context>
@@ -128,9 +132,6 @@ Output Format (high socre celltype appear first), without any additional prompt 
 """
 
 
-
-
-
 CELLTYPE_SCORE = """
 <Scoring_Criteria_with_pathway>
 Marker Profile (60 pts) // common and classical marker will get high score
@@ -184,7 +185,6 @@ CELLTYPE3: SCORE
 """
 
 
-
 CELLTYPE_QC_PROMPT = """
 ## cluster geneset {setid}
 
@@ -198,8 +198,6 @@ enrichment pathway
 [cluster {setid} pathway]
 ```
 """
-
-
 
 
 SUBTYPE_PROMPT = """
@@ -236,7 +234,6 @@ Your reasoning process must be based on INSTRUCTION.the final result should be r
 ...
 <response_format>
 """
-
 
 
 CHECK_TYPE_PROMPT = """
@@ -287,7 +284,6 @@ Please output in the response_format
 """
 
 
-
 PRE_CELLTYPE_PROMPT1 = """
 <Input>
   <Biological_context>
@@ -329,7 +325,6 @@ celltype2: classical marker
 ......
 </response_format>
 """
-
 
 
 CELLSTATE_PROMPT = """
