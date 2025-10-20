@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import scanpy as sc
@@ -185,6 +186,311 @@ def agent_pipe(agent, pct_txt, score_prompt: str | None = None, cluster_id=None)
     logger.info(f"Compiling final cell type report segment for {cluster_label}.")
     agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
     return agent.get_history(role="assistant")
+
+
+def ensemble_agent_pipe(
+    agent,
+    pct_txt,
+    score_prompt: str | None = None,
+    cluster_id=None,
+    model_configs=None,
+    return_metadata=False,
+):
+    from .prompt import CELLTYPE_SCORE, CELLTYPE_REPORT
+
+    cluster_label = (
+        f"cluster {cluster_id}" if cluster_id is not None else "current gene set"
+    )
+    logger.info(f"Generating detailed reasoning for {cluster_label}.")
+    original_provider = agent.provider
+    original_model = agent.model
+    original_base_url = agent.base_url
+    metadata = {
+        "primary_label": None,
+        "reasoning_by_model": [],
+        "score_by_model": [],
+        "aggregated_scores": None,
+    }
+    base_label_parts = []
+    if original_provider:
+        base_label_parts.append(str(original_provider))
+    if original_model:
+        base_label_parts.append(str(original_model))
+    default_label = ":".join(base_label_parts) if base_label_parts else "primary_model"
+    metadata["primary_label"] = default_label
+    configured_models: list[dict] | None = None
+    if model_configs is None:
+        reasoning_response = agent.query(
+            pct_txt, use_context=True, add_context=True, use_cache=True
+        )
+        metadata["reasoning_by_model"].append(
+            {"label": default_label, "response": reasoning_response}
+        )
+    else:
+        configured_models = []
+        reasoning_blocks = []
+        if not isinstance(model_configs, (list, tuple)):
+            raise TypeError("model_configs must be an iterable of configuration dicts.")
+        for idx, cfg in enumerate(model_configs, start=1):
+            if not isinstance(cfg, dict):
+                raise TypeError(
+                    f"Model config at position {idx} must be a dict, got {type(cfg)}."
+                )
+            model_name = cfg.get("model")
+            if model_name is None:
+                raise ValueError(
+                    f"Missing 'model' entry in model config at position {idx}."
+                )
+            provider_name = cfg.get("provider", original_provider)
+            base_url = cfg.get("base_url", original_base_url)
+            label = cfg.get("label")
+            if label is None:
+                label_parts = []
+                if provider_name:
+                    label_parts.append(str(provider_name))
+                label_parts.append(str(model_name))
+                label = ":".join(label_parts) if label_parts else f"model_{idx}"
+            agent.provider = provider_name
+            agent.model = model_name
+            agent.base_url = base_url
+            logger.info(
+                "Querying model '%s' (provider '%s') for %s.",
+                model_name,
+                provider_name or "default",
+                cluster_label,
+            )
+            response = agent.query(
+                pct_txt, use_context=True, add_context=False, use_cache=False
+            )
+            reasoning_blocks.append((label, response))
+            configured_models.append(
+                {
+                    "label": label,
+                    "provider": provider_name,
+                    "model": model_name,
+                    "base_url": base_url,
+                }
+            )
+        if not reasoning_blocks:
+            raise ValueError("model_configs must contain at least one configuration.")
+        agent.provider = original_provider
+        agent.model = original_model
+        agent.base_url = original_base_url
+        combination_prompt = (
+            f"{pct_txt}\n\n"
+            "The above user task has already been answered independently by multiple models. "
+            "Please synthesize a concise, reconciled reasoning by taking the strengths of each response, "
+            "highlighting agreements, resolving conflicts, and pointing out any novel insights contributed by individual models.\n\n"
+        )
+        for label, response in reasoning_blocks:
+            combination_prompt += (
+                f"### Response from {label}\n{(response or '').strip()}\n\n"
+            )
+        combination_prompt += (
+            "### Instructions\n"
+            "1. Merge the complementary strengths of the above responses into a single coherent analysis.\n"
+            "2. Explicitly mention any consensus points across models.\n"
+            "3. Address conflicting statements, clarifying which interpretation is better supported.\n"
+            "4. Note any unique but compelling insights contributed by individual models.\n"
+            "5. Keep the reasoning focused and structured for downstream scoring.\n"
+            "6. After the merged reasoning, add a `Candidate Roster` section that lists every plausible cell type referenced across the responses (one entry per cell type, no duplicates, descending confidence if possible).\n"
+        )
+        agent.provider = original_provider
+        agent.model = original_model
+        agent.base_url = original_base_url
+        combined_response = agent.query(
+            combination_prompt,
+            use_context=False,
+            add_context=True,
+            use_cache=False,
+        )
+        agent.provider = original_provider
+        agent.model = original_model
+        agent.base_url = original_base_url
+        agent.create_conversation(pct_txt, combined_response)
+        metadata["reasoning_by_model"] = [
+            {"label": label, "response": response}
+            for label, response in reasoning_blocks
+        ]
+    score_instruction = CELLTYPE_SCORE if score_prompt is None else score_prompt
+    logger.info(f"Requesting scoring details for {cluster_label}.")
+    if model_configs is None:
+        score_response = agent.query(
+            score_instruction, use_context=True, add_context=True, use_cache=False
+        )
+        scores = score_response
+        parsed_entries = []
+        try:
+            from .structure import extract_score  # local import to avoid cycles
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                "Failed to import extract_score for single-model scoring: %s", exc
+            )
+            extract_score = None  # type: ignore
+        if extract_score is not None and score_response:
+            try:
+                parsed = extract_score(
+                    score_response,
+                    original_provider,
+                    original_model,
+                    original_base_url,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed to parse scores for single-model response: %s", exc
+                )
+            else:
+                parsed_entries = [
+                    {"celltype": entry.celltype, "score": float(entry.score)}
+                    for entry in parsed.score_ls
+                ]
+                metadata["aggregated_scores"] = {
+                    entry["celltype"]: entry["score"] for entry in parsed_entries
+                }
+        metadata["score_by_model"].append(
+            {
+                "label": default_label,
+                "response": score_response,
+                "scores": parsed_entries,
+            }
+        )
+    else:
+        assert configured_models is not None
+        score_blocks = []
+        try:
+            from .structure import extract_score  # local import to avoid cycles
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                "Failed to import extract_score for ensemble averaging: %s", exc
+            )
+            extract_score = None  # type: ignore
+        for cfg in configured_models:
+            agent.provider = cfg["provider"]
+            agent.model = cfg["model"]
+            agent.base_url = cfg["base_url"]
+            logger.info(
+                "Scoring with model '%s' (provider '%s') for %s.",
+                cfg["model"],
+                cfg["provider"] or "default",
+                cluster_label,
+            )
+            response = agent.query(
+                score_instruction, use_context=True, add_context=False, use_cache=False
+            )
+            score_blocks.append((cfg, response))
+            parsed_entries = []
+            if response and extract_score is not None:
+                try:
+                    parsed = extract_score(
+                        response,
+                        cfg["provider"] or original_provider,
+                        cfg["model"],
+                        cfg["base_url"],
+                    )
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.warning(
+                        "Failed to parse scores from model '%s': %s", cfg["label"], exc
+                    )
+                else:
+                    parsed_entries = [
+                        {"celltype": entry.celltype, "score": float(entry.score)}
+                        for entry in parsed.score_ls
+                    ]
+            metadata["score_by_model"].append(
+                {
+                    "label": cfg["label"],
+                    "response": response,
+                    "scores": parsed_entries,
+                }
+            )
+        agent.provider = original_provider
+        agent.model = original_model
+        agent.base_url = original_base_url
+        aggregated = False
+        raw_score_dict = {
+            entry["label"]: {
+                score["celltype"]: score["score"] for score in entry["scores"]
+            }
+            for entry in metadata["score_by_model"]
+        }
+        if raw_score_dict:
+            base_cfg = configured_models[0]
+            unify_model = original_model or base_cfg["model"]
+            unify_provider = original_provider or base_cfg["provider"]
+            unify_base_url = original_base_url or base_cfg["base_url"]
+            try:
+                unified_scores = unify_name(  # type: ignore[name-defined]
+                    raw_score_dict,
+                    unify_model,
+                    provider=unify_provider,
+                    base_url=unify_base_url,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning("Failed to unify cell type names across models: %s", exc)
+                unified_scores = raw_score_dict
+            aggregated_scores_map: defaultdict[str, list[float]] = defaultdict(list)
+            support_counts: defaultdict[str, int] = defaultdict(int)
+            for entry in metadata["score_by_model"]:
+                updated_scores = unified_scores.get(entry["label"], {})
+                entry["scores"] = [
+                    {"celltype": name, "score": float(value)}
+                    for name, value in updated_scores.items()
+                ]
+                for name, value in updated_scores.items():
+                    aggregated_scores_map[name].append(float(value))
+                    support_counts[name] += 1
+            if aggregated_scores_map:
+                aggregated = True
+                averaged_scores = {
+                    name: sum(values) / len(values)
+                    for name, values in aggregated_scores_map.items()
+                }
+                metadata["aggregated_scores"] = averaged_scores
+                sorted_scores = sorted(
+                    (
+                        (name, averaged_scores[name], support_counts[name])
+                        for name in aggregated_scores_map.keys()
+                    ),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+                summary_lines = [
+                    "Ensemble scoring summary (averaged across contributing models):"
+                ]
+                for idx, (celltype, avg_score, count) in enumerate(
+                    sorted_scores, start=1
+                ):
+                    summary_lines.append(
+                        f"CELLTYPE{idx}: {celltype} (ensemble score: {avg_score:.2f}; models: {count})"
+                    )
+                scores = "\n".join(summary_lines)
+            else:
+                aggregated = False
+        if not aggregated:
+            logger.warning(
+                "Falling back to concatenated per-model scores because averaging failed."
+            )
+            scores = "\n\n".join(
+                f"### Score from {cfg['label']}\n{(resp or '').strip()}"
+                for cfg, resp in score_blocks
+            )
+        per_model_sections = [
+            f"### Score from {cfg['label']}\n{(resp or '').strip()}"
+            for cfg, resp in score_blocks
+        ]
+        if aggregated and per_model_sections:
+            scores = f"{scores}\n\n" + "\n\n".join(per_model_sections)
+        agent.create_conversation(score_instruction, scores)
+    report_prompt = CELLTYPE_REPORT.format(score=scores)
+    logger.info(f"Compiling final cell type report segment for {cluster_label}.")
+    agent.query(report_prompt, use_context=True, add_context=True, use_cache=False)
+    agent.provider = original_provider
+    agent.model = original_model
+    agent.base_url = original_base_url
+    history = agent.get_history(role="assistant")
+    if return_metadata:
+        return {"history": history, "metadata": metadata}
+    return history
 
 
 def get_score_prompt() -> str:
