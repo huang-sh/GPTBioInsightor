@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 from anndata import AnnData
 
@@ -123,7 +124,7 @@ def get_celltype(
                 background=background,
                 pathway=pw_txt,
             )
-            logger.info("Scoring cluster %s with %d genes.", k, len(genes))
+            logger.info("Infer celltype of cluster %s with %d genes.", k, len(genes))
             future = executor.submit(
                 ul.agent_pipe,
                 agent,
@@ -151,6 +152,364 @@ def get_celltype(
     score_dic = ul.unify_name(score_dic, model, provider, base_url)
     logger.info("Cell type identification completed successfully.")
     return score_dic
+
+
+def get_celltype_ensemble(
+    input: AnnData | dict,
+    models: Iterable[Mapping[str, Any]],
+    *,
+    out: Path | str | None = None,
+    background: str | None = None,
+    pathway: dict | None = None,
+    key: str = "rank_genes_groups",
+    topnumber: int = 15,
+    n_jobs: int | None = None,
+    group: str | Iterable[str] | None = None,
+    rm_genes: bool = True,
+    score_prompt: str | None = None,
+    leader_model: Mapping[str, Any] | None = None,
+    max_workers: int | None = None,
+    return_details: bool = False,
+) -> dict:
+    """\
+    Run multi-model cell type annotation using :func:`ensemble_agent_pipe` and aggregate the results.
+
+    Parameters
+    ----------
+    input : AnnData | dict
+        An AnnData object or geneset dict that will be analysed cluster by cluster.
+    models : Iterable[Mapping[str, Any]]
+        Iterable of configuration mappings. Each mapping must provide at least a ``model`` key and may
+        optionally include ``provider``, ``base_url``, ``label``, or ``score_prompt``.
+    background : str | None, optional
+        Background information shared by all runs, by default None.
+    pathway : dict | None, optional
+        Pathway enrichment information per cluster, by default None.
+    key : str, optional
+        Rank genes groups key, by default "rank_genes_groups".
+    topnumber : int, optional
+        Select top gene number for analysis, by default 15.
+    n_jobs : int | None, optional
+        Number of worker threads for per-cluster queries (legacy argument, retained for API compatibility).
+    group : str | Iterable[str] | None, optional
+        Which group, by default None.
+    rm_genes : bool, optional
+        Remove ribosomal and mitochondrial genes before querying, by default True.
+    score_prompt : str | None, optional
+        Override scoring prompt for every model. If not provided, a shared ``score_prompt`` from the model
+        configs may be used, provided they are consistent.
+    leader_model : Mapping[str, Any] | None, optional
+        Optional configuration for a leader model that performs consensus summarisation and report generation.
+    max_workers : int | None, optional
+        Deprecated compatibility argument; retained for API stability and ignored.
+    return_details : bool, optional
+        When True, include per-model raw results in ``raw_results``.
+
+    Returns
+    -------
+    dict
+        A dictionary containing ``combined_scores`` (cluster -> cell type -> mean score),
+        ``vote_counts`` (cluster -> cell type -> votes), ``total_models`` (number of contributing models),
+        and optionally ``raw_results`` when ``return_details`` is True.
+    """
+    configs = list(models)
+    if not configs:
+        raise ValueError("models must contain at least one configuration.")
+
+    allowed_keys = {"provider", "model", "base_url", "label", "out", "score_prompt"}
+    normalized_configs: list[dict[str, Any]] = []
+    seen_labels: set[str] = set()
+    score_prompts_found: set[str] = set()
+    for idx, raw_cfg in enumerate(configs):
+        if not isinstance(raw_cfg, Mapping):
+            raise TypeError(
+                "Each model configuration must be a mapping containing at least a 'model' key."
+            )
+        unknown = set(raw_cfg.keys()) - allowed_keys
+        if unknown:
+            raise ValueError(
+                f"Unsupported keys {unknown} in model configuration at position {idx}."
+            )
+        model_name = raw_cfg.get("model")
+        if model_name is None:
+            raise ValueError(
+                f"Missing 'model' entry in model configuration at position {idx}."
+            )
+        provider_name = raw_cfg.get("provider")
+        label = raw_cfg.get("label") or f"{provider_name or 'default'}:{model_name}"
+        if label in seen_labels:
+            label = f"{label}_{idx}"
+        seen_labels.add(label)
+        normalized_configs.append(
+            {
+                "provider": provider_name,
+                "model": model_name,
+                "base_url": raw_cfg.get("base_url"),
+                "label": label,
+            }
+        )
+        cfg_score_prompt = raw_cfg.get("score_prompt")
+        if cfg_score_prompt is not None:
+            score_prompts_found.add(cfg_score_prompt)
+
+    if score_prompt is not None:
+        score_instruction = score_prompt
+    else:
+        if len(score_prompts_found) > 1:
+            raise ValueError(
+                "Model-specific score_prompt values differ. Please provide a single score_prompt argument."
+            )
+        score_instruction = (
+            next(iter(score_prompts_found)) if score_prompts_found else None
+        )
+
+    if leader_model is not None and not isinstance(leader_model, Mapping):
+        raise TypeError(
+            "leader_model must be a mapping defining at least a 'model' entry."
+        )
+
+    if leader_model is not None:
+        leader_model_name = leader_model.get("model")
+        if leader_model_name is None:
+            raise ValueError("leader_model configuration must include a 'model' entry.")
+        default_provider = leader_model.get("provider")
+        default_model = leader_model_name
+        default_base_url = leader_model.get("base_url")
+    else:
+        default_provider = normalized_configs[0]["provider"]
+        default_model = normalized_configs[0]["model"]
+        default_base_url = normalized_configs[0]["base_url"]
+
+    sys_prompt = SYSTEM_PROMPT
+    logger.info(
+        "Running ensemble cell type annotation with %d contributing model(s).",
+        len(normalized_configs),
+    )
+    gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
+    logger.info("Prepared %d cluster gene sets for ensemble analysis.", len(gene_dic))
+
+    chat_msg = ul.list_celltype(
+        len(gene_dic),
+        background,
+        default_provider,
+        default_model,
+        default_base_url,
+        sys_prompt,
+    )
+
+    ot = ul.Outputor(out)
+    ot.write("# CellType Analysis (Ensemble)")
+    ot.write(
+        "GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use"
+    )
+    ot.write("## Potential CellType")
+    ot.write(
+        f"In scRNA-Seq data background of '{background}', the following Potential CellType to be identified:"
+    )
+    ot.write(chat_msg[-1]["content"])
+
+    ensemble_configs = [
+        {
+            "label": cfg["label"],
+            "provider": cfg["provider"],
+            "model": cfg["model"],
+            "base_url": cfg["base_url"],
+        }
+        for cfg in normalized_configs
+    ]
+
+    def _normalize_name(name: str) -> str:
+        return "".join(ch.lower() for ch in name if ch.isalnum())
+
+    total_models = len(normalized_configs)
+    combined_scores: dict[str, dict[str, float]] = {}
+    vote_counts: dict[str, dict[str, int]] = {}
+    raw_results: dict[str, dict[str, dict[str, float]]] = {} if return_details else {}
+
+    pathway = {} if pathway is None else pathway
+    cluster_order = list(gene_dic.keys())
+    if not cluster_order:
+        summary = {
+            "combined_scores": {},
+            "vote_counts": {},
+            "total_models": len(normalized_configs),
+        }
+        if return_details:
+            summary["raw_results"] = {}
+        return summary
+
+    def _prepare_pathway_text(cluster_pathway: dict) -> str:
+        if not cluster_pathway:
+            return ""
+        lines = []
+        for db, pw in cluster_pathway.items():
+            lines.append(f"    - {db}: {','.join(pw)}")
+        return "\n".join(lines) + ("\n" if lines else "")
+
+    def _process_cluster(cluster_id) -> tuple[str, dict]:
+        genes = gene_dic[cluster_id]
+        agent = Agent(
+            model=default_model,
+            provider=default_provider,
+            sys_prompt=sys_prompt,
+            base_url=default_base_url,
+        )
+        gene_txt = f"   - cluster {cluster_id}: {','.join(genes[:topnumber])}"
+        cluster_pathway = pathway.get(cluster_id, {})
+        pw_txt = _prepare_pathway_text(cluster_pathway)
+        pct_txt = CELLTYPE_PROMPT.format(
+            candidate=chat_msg[-1]["content"],
+            setid=cluster_id,
+            gene=gene_txt,
+            setnum=len(gene_dic),
+            background=background,
+            pathway=pw_txt,
+        )
+        logger.info(
+            "Running ensemble inference for cluster %s with %d genes.",
+            cluster_id,
+            len(genes),
+        )
+        result = ul.ensemble_agent_pipe(
+            agent,
+            pct_txt,
+            score_prompt=score_instruction,
+            cluster_id=cluster_id,
+            model_configs=ensemble_configs,
+            return_metadata=True,
+        )
+        history = result["history"]
+        metadata = result["metadata"]
+        return cluster_id, {
+            "history": history,
+            "metadata": metadata,
+            "genes": genes,
+            "pathway_txt": pw_txt,
+        }
+
+    if max_workers is None:
+        max_workers = min(8, len(cluster_order))
+    max_workers = max(1, max_workers)
+
+    cluster_results: dict[str, dict] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(_process_cluster, cluster_id): cluster_id
+            for cluster_id in cluster_order
+        }
+        for future in future_map:
+            cluster_id, payload = future.result()
+            cluster_results[str(cluster_id)] = payload
+
+    for cluster_id in cluster_order:
+        cluster_key = str(cluster_id)
+        payload = cluster_results[cluster_key]
+        history = payload["history"]
+        metadata = payload["metadata"]
+        genes = payload["genes"]
+        pw_txt = payload["pathway_txt"]
+
+        ot.write(f"## cluster geneset {cluster_id}\n")
+        ot.write("### Gene List\n")
+        ot.write(f"Top genes\n```\n{','.join(genes)}\n```\n")
+        ot.write(f"enrichment pathway\n```\n{pw_txt}```\n")
+        ot.write("### celltype thinking\n")
+        if history:
+            ot.write(history[0])
+        if len(history) > 1:
+            ot.write("### Score\n")
+            ot.write(history[1])
+        if len(history) > 2:
+            ot.write("### Report\n")
+            ot.write(history[2])
+
+        score_bucket: dict[str, list[float]] = {}
+        vote_bucket: dict[str, int] = {}
+        representative: dict[str, str] = {}
+
+        for model_score in metadata.get("score_by_model", []):
+            label = model_score.get("label") or "model"
+            scores = model_score.get("scores") or []
+            if return_details:
+                raw_results.setdefault(label, {})
+                raw_results[label][cluster_key] = {
+                    entry["celltype"]: float(entry["score"]) for entry in scores
+                }
+            for entry in scores:
+                celltype = entry["celltype"]
+                norm_key = _normalize_name(celltype)
+                representative.setdefault(norm_key, celltype)
+                score_bucket.setdefault(norm_key, []).append(float(entry["score"]))
+                vote_bucket[norm_key] = vote_bucket.get(norm_key, 0) + 1
+
+        if metadata.get("aggregated_scores") and not score_bucket:
+            # Fall back to metadata aggregate if parsing failed earlier.
+            for celltype, value in metadata["aggregated_scores"].items():
+                norm_key = _normalize_name(celltype)
+                representative.setdefault(norm_key, celltype)
+                score_bucket.setdefault(norm_key, []).append(float(value))
+
+        if score_bucket:
+            combined_scores[cluster_key] = dict(
+                sorted(
+                    (
+                        (
+                            representative[key],
+                            sum(values) / total_models,
+                        )
+                        for key, values in score_bucket.items()
+                    ),
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+            )
+            vote_counts[cluster_key] = dict(
+                sorted(
+                    (
+                        (representative[key], vote_bucket.get(key, len(values)))
+                        for key, values in score_bucket.items()
+                    ),
+                    key=lambda item: (-item[1], item[0]),
+                )
+            )
+        else:
+            combined_scores[cluster_key] = {}
+            vote_counts[cluster_key] = {}
+
+    summary_scores = ul.unify_name(
+        combined_scores,
+        default_model,
+        provider=default_provider,
+        base_url=default_base_url,
+    )
+    remapped_vote_counts: dict[str, dict[str, int]] = {}
+    for cluster_key, scores in summary_scores.items():
+        original_votes = vote_counts.get(cluster_key, {})
+        cluster_vote: dict[str, int] = {}
+        for celltype in scores.keys():
+            norm_key = _normalize_name(celltype)
+            total_votes = sum(
+                count
+                for name, count in original_votes.items()
+                if _normalize_name(name) == norm_key
+            )
+            if total_votes:
+                cluster_vote[celltype] = total_votes
+        remapped_vote_counts[cluster_key] = dict(
+            sorted(cluster_vote.items(), key=lambda item: (-item[1], item[0]))
+        )
+    for cluster_key in vote_counts.keys():
+        remapped_vote_counts.setdefault(cluster_key, vote_counts[cluster_key])
+    vote_counts = remapped_vote_counts
+    summary = {
+        "combined_scores": summary_scores,
+        "vote_counts": vote_counts,
+        "total_models": len(normalized_configs),
+    }
+    if return_details:
+        summary["raw_results"] = raw_results
+    logger.info("Ensemble cell type annotation finished.")
+    return summary
 
 
 def get_subtype(
