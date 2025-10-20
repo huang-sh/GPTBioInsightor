@@ -425,39 +425,63 @@ def get_celltype_ensemble(
 
         score_bucket: dict[str, list[float]] = {}
         vote_bucket: dict[str, int] = {}
-        representative: dict[str, str] = {}
 
+        per_model_scores: dict[str, dict[str, float]] = {}
         for model_score in metadata.get("score_by_model", []):
             label = model_score.get("label") or "model"
             scores = model_score.get("scores") or []
+            per_model_scores[label] = {
+                entry["celltype"]: float(entry["score"]) for entry in scores
+            }
+
+        if per_model_scores:
+            try:
+                unified_per_model = ul.unify_name(
+                    per_model_scores,
+                    default_model,
+                    provider=default_provider,
+                    base_url=default_base_url,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed to unify names across models for cluster %s: %s",
+                    cluster_id,
+                    exc,
+                )
+                unified_per_model = per_model_scores
+        else:
+            unified_per_model = {}
+
+        for label, scores_dict in unified_per_model.items():
             if return_details:
                 raw_results.setdefault(label, {})
                 raw_results[label][cluster_key] = {
-                    entry["celltype"]: float(entry["score"]) for entry in scores
+                    celltype: float(score) for celltype, score in scores_dict.items()
                 }
-            for entry in scores:
-                celltype = entry["celltype"]
-                norm_key = _normalize_name(celltype)
-                representative.setdefault(norm_key, celltype)
-                score_bucket.setdefault(norm_key, []).append(float(entry["score"]))
-                vote_bucket[norm_key] = vote_bucket.get(norm_key, 0) + 1
+            for entry in metadata.get("score_by_model", []):
+                if (entry.get("label") or "model") == label:
+                    entry["scores"] = [
+                        {"celltype": celltype, "score": float(score)}
+                        for celltype, score in scores_dict.items()
+                    ]
+            for celltype, score in scores_dict.items():
+                score_bucket.setdefault(celltype, []).append(float(score))
+                vote_bucket[celltype] = vote_bucket.get(celltype, 0) + 1
 
         if metadata.get("aggregated_scores") and not score_bucket:
-            # Fall back to metadata aggregate if parsing failed earlier.
             for celltype, value in metadata["aggregated_scores"].items():
-                norm_key = _normalize_name(celltype)
-                representative.setdefault(norm_key, celltype)
-                score_bucket.setdefault(norm_key, []).append(float(value))
+                score_bucket.setdefault(celltype, []).append(float(value))
+                vote_bucket[celltype] = vote_bucket.get(celltype, 0) + 1
 
         if score_bucket:
             combined_scores[cluster_key] = dict(
                 sorted(
                     (
                         (
-                            representative[key],
+                            celltype,
                             sum(values) / total_models,
                         )
-                        for key, values in score_bucket.items()
+                        for celltype, values in score_bucket.items()
                     ),
                     key=lambda item: item[1],
                     reverse=True,
@@ -466,8 +490,8 @@ def get_celltype_ensemble(
             vote_counts[cluster_key] = dict(
                 sorted(
                     (
-                        (representative[key], vote_bucket.get(key, len(values)))
-                        for key, values in score_bucket.items()
+                        (celltype, vote_bucket.get(celltype, len(values)))
+                        for celltype, values in score_bucket.items()
                     ),
                     key=lambda item: (-item[1], item[0]),
                 )
