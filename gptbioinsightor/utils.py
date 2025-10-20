@@ -504,7 +504,7 @@ def score_heatmap(score_dic, cutoff=0, figsize=(10, 6), cmap="viridis"):
     import seaborn as sns
     import matplotlib.pyplot as plt
 
-    df = pd.DataFrame(score_dic).T.apply(pd.to_numeric)
+    df = pd.DataFrame(score_dic).T.apply(pd.to_numeric).round(1)
     df = df[df >= cutoff].dropna(axis=1, how="all")
     plt.figure(figsize=figsize)
     base_size = min(figsize) * 2
