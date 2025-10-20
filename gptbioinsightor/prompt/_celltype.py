@@ -171,6 +171,7 @@ Biological Context (30 pts)
 - For matching cell type or state markers, e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
 - For narrow markers of cell type or state, e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
 - Give full points if there are classical or well-known markers to support cell type or state
+- Align your scoring roster with the latest `Candidate Roster` provided earlier in the conversation if `Candidate Roster` exist; treat it as the authoritative list of cell types to evaluate.
 </Reminder>
 <Task>
 Please review and correct above content if anything wrong, then score the each Cell Type Prediction of cluster geneset using a scoring criteria (100 points),
