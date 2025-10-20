@@ -292,14 +292,19 @@ PRE_CELLTYPE_PROMPT1 = """
   </Biological_context>
 </Input>
 <Task>
-Within the background<Biological_context>, please list the {num} most likely different cell types(Broad Category, such as T cell, not CD8 T cell) that are easy to detect and commonly classified in actual scRNA-Seq data analysis.
-if possible, also include two most potential cell states for each cell type within the given Biological_context.
+Within the <Biological_context>, please list the {num} most likely broad cell types 
+(e.g., T cell, B cell, fibroblast, epithelial cell, endothelial cell) that are commonly detected in scRNA-Seq data analysis. 
+For each cell type, provide up to two potential cell states relevant to the given biological context.
+Only include biologically reasonable cell types for the context, and exclude irrelevant ones.
+If relevant, prioritize stromal (fibroblasts, stellate, endothelial, pericytes, vSMCs), 
+epithelial/parenchymal, and major immune lineages (T, B, NK, macrophages, dendritic cells, neutrophils, mast cells).
 </Task>
 """
 
 PRE_CELLTYPE_PROMPT2 = """
-In scRNA-Seq study, the scRNA-Seq data is derived from the biological context of '{background}'.
-Please list the most likely and common cell types to be identified in actual scRNA-Seq data analysis, also include the potential cell states for each cell type within the given biological context.
+In a scRNA-Seq study derived from the biological context of '{background}', 
+list the most likely and common broad cell types expected to be identified. 
+For each, also include potential cell states that are biologically reasonable in this context.
 """
 
 PRE_CELLTYPE_MERGE_PROMPT = """
