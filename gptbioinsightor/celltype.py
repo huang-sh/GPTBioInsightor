@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterable, Mapping
@@ -30,6 +31,7 @@ def get_celltype(
     n_jobs: int | None = None,
     provider: str | None = None,
     model: str | None = None,
+    search_model: str | None = None,
     group: str | Iterable[str] | None = None,
     base_url: str | None = None,
     rm_genes=True,
@@ -60,6 +62,9 @@ def get_celltype(
         "anthropic" for claude
     model : str | None, optional
         set a model based on LLM provider, by default None
+    search_model : str | None, optional
+        If provided, run Perplexity-based cell type search using this model
+        before the main annotation workflow, by default None.
     group : str | Iterable, optional
          Which group, by default None
     base_url : str | None, optional
@@ -82,9 +87,57 @@ def get_celltype(
     for ck, genes in gene_dic.items():
         genes_ls.append(f"   - cluster {ck}: {','.join(genes[:topnumber])}")
     # all_gene_txt = "\n".join(genes_ls)
-    chat_msg = ul.list_celltype(
-        len(gene_dic), background, provider, model, base_url, sys_prompt
-    )
+    search_results = None
+    if search_model:
+        search_results = ul.search_celltype_for_clusters(
+            background,
+            gene_dic,
+            search_model=search_model,
+            max_workers=n_jobs,
+        )
+        summary_agent = Agent(
+            model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url
+        )
+        perplexity_summary = search_results.get("summary", "")
+        detail_lines = []
+        for cluster_id in sorted(search_results["details"], key=str):
+            content = search_results["details"][cluster_id].get("content") or ""
+            detail_lines.append(f"Cluster {cluster_id}: {content}")
+        detail_block = "\n".join(detail_lines)
+        summary_prompt = (
+            "You are assisting with scRNA-Seq cluster annotation.\n"
+            f"Background: {background or 'unspecified'}.\n"
+            "External evidence suggests the following potential identities for each cluster:\n"
+            f"{perplexity_summary}\n\n"
+            "Provide a concise, well-structured overview of the most likely cell types per cluster, "
+            "highlighting the leading hypothesis and key rationale for each cluster in 1-2 sentences."
+        )
+        try:
+            candidate_content = summary_agent.query(
+                summary_prompt,
+                use_context=False,
+                add_context=False,
+                use_cache=False,
+            ).strip()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception(
+                "Failed to summarize Perplexity search outputs, falling back to raw summary: %s",
+                exc,
+            )
+            candidate_content = perplexity_summary or detail_block
+        chat_msg = [
+            {"role": "user", "content": summary_prompt},
+            {"role": "assistant", "content": candidate_content},
+        ]
+        logger.info(
+            "Leveraging Perplexity search results (%s) for downstream prompts.",
+            search_model,
+        )
+    else:
+        chat_msg = ul.list_celltype(
+            len(gene_dic), background, provider, model, base_url, sys_prompt
+        )
+        candidate_content = chat_msg[-1]["content"]
     logger.info(
         "Received initial candidate cell types for %d clusters from provider '%s' using model '%s'.",
         len(gene_dic),
@@ -100,9 +153,19 @@ def get_celltype(
     ot.write(
         f"In scRNA-Seq data background of '{background}', the following Potential CellType to be identified:"
     )
-    ot.write(chat_msg[-1]["content"])
+    if not search_model:
+        candidate_content = chat_msg[-1]["content"] if chat_msg else ""
+    ot.write(candidate_content)
+    if search_results:
+        ot.write("## Perplexity Search Overview")
+        ot.write(search_results.get("summary", ""))
 
-    with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+    worker_count = n_jobs
+    if worker_count is None:
+        cpu_count = os.cpu_count() or 1
+        worker_count = min(max(1, cpu_count // 2), max(1, len(gene_dic)))
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
         futures = {}
         pathway = {} if pathway is None else pathway
         pathway_txt_dic = {}
@@ -117,7 +180,7 @@ def get_celltype(
                 pw_txt += f"    - {db}: {','.join(pw)}\n"
             pathway_txt_dic[k] = pw_txt
             pct_txt = CELLTYPE_PROMPT.format(
-                candidate=chat_msg[-1]["content"],
+                candidate=candidate_content,
                 setid=k,
                 gene=gene_txt,
                 setnum=len(gene_dic),
@@ -140,6 +203,34 @@ def get_celltype(
             ot.write("### Gene List\n")
             ot.write(f"Top genes\n```\n{','.join(gene_dic[k])}\n```\n")
             ot.write(f"enrichment pathway\n```\n{pathway_txt_dic[k]}```\n")
+            if search_results:
+                detail = search_results["details"].get(k, {})
+                ot.write("### Perplexity Search Output\n")
+                per_content = (
+                    detail.get("content") or "No response returned by Perplexity."
+                )
+                ot.write(per_content)
+                ot.write("### Perplexity Citations\n")
+                citations = detail.get("citations") or []
+                if citations:
+                    for cite in citations:
+                        if isinstance(cite, dict):
+                            title = (
+                                cite.get("title")
+                                or cite.get("lock_title")
+                                or cite.get("description")
+                                or cite.get("url")
+                                or "Citation"
+                            )
+                            url = cite.get("url") or cite.get("source")
+                            if url:
+                                ot.write(f"- {title}: {url}")
+                            else:
+                                ot.write(f"- {title}")
+                        else:
+                            ot.write(f"- {cite}")
+                else:
+                    ot.write("No citations provided by Perplexity.")
             ot.write("### celltype thinking\n")
             ot.write(reps[0])
             ot.write("### Score\n")

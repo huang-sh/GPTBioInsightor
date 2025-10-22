@@ -4,6 +4,7 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import scanpy as sc
 import pandas as pd
@@ -576,3 +577,210 @@ def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
         new_dic[key] = max_cell
     adata.obs[add_key] = adata.obs[cluster_key].map(new_dic)
     return adata
+
+
+def _get_perplexity_key():
+    api_key = (
+        os.getenv("PERPLEXITY_API_KEY")
+        or os.getenv("PPLX_API_KEY")
+        or os.getenv("PERPLEXITYAI_API_KEY")
+    )
+    if api_key is None:
+        raise ApiKeyMissingError(
+            "Note: API key not found, please set PERPLEXITY_API_KEY or PPLX_API_KEY"
+        )
+    return api_key
+
+
+def search_celltype(
+    background,
+    genes,
+    *,
+    search_model="sonar",
+    system_prompt: str | None = None,
+    timeout: int = 60,
+):
+    """Query Perplexity once for a single cluster gene set."""
+    if not genes:
+        logger.warning("Skipping Perplexity search because no genes were provided.")
+        return {"content": "", "citations": [], "completion": None}
+
+    try:
+        from perplexity import Perplexity
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise ImportError(
+            "The 'perplexity' package is required when using search_model. "
+            "Please install it and try again."
+        ) from exc
+
+    if isinstance(genes, (list, tuple, set)):
+        gene_text = ", ".join(str(g) for g in genes)
+    else:
+        gene_text = str(genes)
+
+    query_txt = f"""
+    <Input>
+    <Biological_context>
+        {background or "unknown"}
+    </Biological_context>
+    <Gene_markers>
+        {gene_text}
+    </Gene_markers>
+    </Input>
+
+    <Task>
+    Identify the specific cell type(s) within the provided biological context
+    that show high expression of these gene markers, focusing on the most likely cell type and state.
+    </Task>
+    """.strip()
+
+    _get_perplexity_key()
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": query_txt})
+    client = Perplexity()
+
+    try:
+        completion = client.chat.completions.create(
+            messages=messages,
+            model=search_model,
+            timeout=timeout,
+        )
+    except TypeError as exc:
+        if "timeout" in str(exc):
+            completion = client.chat.completions.create(
+                messages=messages,
+                model=search_model,
+            )
+        else:
+            logger.exception("Perplexity request failed: %s", exc)
+            return {
+                "content": "",
+                "citations": [],
+                "completion": {"error": str(exc)},
+            }
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.exception("Perplexity request failed: %s", exc)
+        return {
+            "content": "",
+            "citations": [],
+            "completion": {"error": str(exc)},
+        }
+
+    def _get_attr(obj, key, default=None):
+        if obj is None:
+            return default
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    choices = _get_attr(completion, "choices", []) or []
+    if not choices:
+        logger.warning("Perplexity response did not contain any choices.")
+        return {"content": "", "citations": [], "completion": completion}
+
+    first_choice = choices[0]
+    message = _get_attr(first_choice, "message", None)
+    content = ""
+    if message:
+        raw_content = _get_attr(message, "content", "")
+        if isinstance(raw_content, list):
+            content = " ".join(str(part) for part in raw_content)
+        else:
+            content = str(raw_content)
+    else:
+        content = str(_get_attr(first_choice, "content", "") or "")
+    content = content.strip()
+
+    citations = (
+        _get_attr(message, "citations", None)
+        or _get_attr(first_choice, "citations", None)
+        or _get_attr(completion, "citations", None)
+        or []
+    )
+    if citations and not isinstance(citations, list):
+        citations = [citations]
+    logger.debug("Received Perplexity content with %d citations.", len(citations))
+    return {"content": content, "citations": citations, "completion": completion}
+
+
+def search_celltype_for_clusters(
+    background,
+    gene_dict,
+    *,
+    search_model,
+    system_prompt: str | None = None,
+    max_workers: int | None = None,
+    timeout: int = 60,
+):
+    """\
+    Run Perplexity search for every cluster in parallel and build a short summary.
+
+    Returns a mapping containing per-cluster search outputs and a concise summary
+    that can be reused in downstream prompts.
+    """
+    if not gene_dict:
+        return {"details": {}, "summary": "", "messages": []}
+
+    if max_workers is None:
+        cpu_count = os.cpu_count() or 1
+        max_workers = min(max(1, cpu_count // 2), len(gene_dict))
+        max_workers = max(max_workers, 1)
+
+    logger.info(
+        "Running Perplexity (%s) search for %d clusters with %d workers.",
+        search_model,
+        len(gene_dict),
+        max_workers,
+    )
+    details = {}
+    futures = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for cluster_id, genes in gene_dict.items():
+            futures[
+                executor.submit(
+                    search_celltype,
+                    background,
+                    genes,
+                    search_model=search_model,
+                    system_prompt=system_prompt,
+                    timeout=timeout,
+                )
+            ] = cluster_id
+        for future in as_completed(futures):
+            cluster_id = futures[future]
+            try:
+                details[cluster_id] = future.result()
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.exception(
+                    "Perplexity search failed for cluster %s: %s", cluster_id, exc
+                )
+                details[cluster_id] = {
+                    "content": "",
+                    "citations": [],
+                    "completion": {"error": str(exc)},
+                }
+
+    def _shorten(text, limit=220):
+        stripped = " ".join(text.strip().split())
+        if len(stripped) <= limit:
+            return stripped
+        return stripped[: limit - 3].rstrip() + "..."
+
+    summary_lines = []
+    for cluster_id in sorted(details, key=str):
+        content = details[cluster_id].get("content") or "No response."
+        summary_lines.append(f"cluster {cluster_id}: {_shorten(content)}")
+    summary = "\n".join(summary_lines)
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                f"Summarize potential cell types for {len(gene_dict)} clusters in "
+                f"the context of '{background or 'unspecified'}'."
+            ),
+        },
+        {"role": "assistant", "content": summary},
+    ]
+    return {"details": details, "summary": summary, "messages": messages}
