@@ -45,7 +45,7 @@ CELLTYPE_PROMPT = """
 
    Potential celltype and state:
       - MUST review each cell type in Candidate_celltype.
-      - New celltype could be provided if there are NO matched Markers in Candidate_celltype.
+      - New celltype could be provided if there are NO matched in Candidate_celltype.
 
    Validation
       - Provide Gold standard markers(not in cluster {setid} geneset) for cell type validation
@@ -57,6 +57,8 @@ But make reasonable inferential extensions, such as :
 - gene interactions
 - metabolic characteristics
 - and other plausible speculations.
+When multiple clusters share the same broad lineage (e.g. various monocyte states), ensure each cluster receives a distinct refined label and explicitly describe the distinguishing evidence for the current cluster.
+Always tie your reasoning back to the specified cluster identifier.
 It should be noted that possible contaminants, residual populations, or technical artifacts may remain due to limitations in isolation, processing, or measurement. Treat these non-ideal components as potential minor confounders when forming conclusions rather than assuming a perfectly pure sample.
 </Reminder>
 <Input>
@@ -64,7 +66,7 @@ It should be noted that possible contaminants, residual populations, or technica
     {background}
   </biological_context>
   <Geneset>
-    {gene} 
+    cluster {setid} markers: {gene} 
   </Geneset>
   <Pathway>
     {pathway}
