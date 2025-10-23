@@ -57,7 +57,7 @@ But make reasonable inferential extensions, such as :
 - gene interactions
 - metabolic characteristics
 - and other plausible speculations.
-When multiple clusters share the same broad lineage (e.g. various monocyte states), ensure each cluster receives a distinct refined label and explicitly describe the distinguishing evidence for the current cluster.
+Prioritize identifying the correct broad lineage for the cluster. Only add refined cell subtype or states when other clusters in the dataset share the same lineage, and explicitly describe the distinguishing evidence for the current cluster when you do so.
 Always tie your reasoning back to the specified cluster identifier.
 It should be noted that possible contaminants, residual populations, or technical artifacts may remain due to limitations in isolation, processing, or measurement. Treat these non-ideal components as potential minor confounders when forming conclusions rather than assuming a perfectly pure sample.
 </Reminder>
@@ -181,9 +181,9 @@ if there is no pathway provided, use Scoring_Criteria_without_pathway, otherwise
 In addition to your thinking process, the final result should be returned with format: response_format,  do not include tag
 </Task>
 <response_format>
-CELLTYPE1: SCORE
-CELLTYPE2: SCORE
-CELLTYPE3: SCORE
+{CELLTYPE1}: {SCORE}
+{CELLTYPE2}: {SCORE}
+{CELLTYPE3}: {SCORE}
 </response_format>
 """
 
