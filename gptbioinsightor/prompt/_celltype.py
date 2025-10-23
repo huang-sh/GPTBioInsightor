@@ -57,8 +57,8 @@ But make reasonable inferential extensions, such as :
 - gene interactions
 - metabolic characteristics
 - and other plausible speculations.
-Prioritize identifying the correct broad lineage for the cluster. Only add refined cell subtype or states when other clusters in the dataset share the same lineage, and explicitly describe the distinguishing evidence for the current cluster when you do so.
-Always tie your reasoning back to the specified cluster identifier.
+Prioritize identifying the correct broad lineage for cluster {setid}. Scan <Candidate_celltype> for references to other clusters; only add refined subtypes or states when those clusters share the same lineage, and explicitly state the distinguishing evidence that separates cluster {setid} from its peers.
+Always tie your reasoning back to the specified cluster identifier and echo the final label you selected for cluster {setid}.
 It should be noted that possible contaminants, residual populations, or technical artifacts may remain due to limitations in isolation, processing, or measurement. Treat these non-ideal components as potential minor confounders when forming conclusions rather than assuming a perfectly pure sample.
 </Reminder>
 <Input>
