@@ -157,7 +157,7 @@ def get_celltype(
         candidate_content = chat_msg[-1]["content"] if chat_msg else ""
     ot.write(candidate_content)
     if search_results:
-        ot.write("## Perplexity Search Overview")
+        ot.write("## Online Search Overview")
         ot.write(search_results.get("summary", ""))
 
     worker_count = n_jobs
@@ -205,12 +205,12 @@ def get_celltype(
             ot.write(f"enrichment pathway\n```\n{pathway_txt_dic[k]}```\n")
             if search_results:
                 detail = search_results["details"].get(k, {})
-                ot.write("### Perplexity Search Output\n")
+                ot.write("### Online Search Output\n")
                 per_content = (
                     detail.get("content") or "No response returned by Perplexity."
                 )
                 ot.write(per_content)
-                ot.write("### Perplexity Citations\n")
+                ot.write("### Citations\n")
                 citations = detail.get("citations") or []
                 if citations:
                     for cite in citations:
@@ -230,7 +230,7 @@ def get_celltype(
                         else:
                             ot.write(f"- {cite}")
                 else:
-                    ot.write("No citations provided by Perplexity.")
+                    ot.write("No citations provided.")
             ot.write("### celltype thinking\n")
             ot.write(reps[0])
             ot.write("### Score\n")
