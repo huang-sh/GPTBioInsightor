@@ -260,6 +260,7 @@ def get_celltype_ensemble(
     score_prompt: str | None = None,
     leader_model: Mapping[str, Any] | None = None,
     max_workers: int | None = None,
+    search_model: str | None = None,
     return_details: bool = False,
 ) -> dict:
     """\
@@ -293,6 +294,8 @@ def get_celltype_ensemble(
         Optional configuration for a leader model that performs consensus summarisation and report generation.
     max_workers : int | None, optional
         Deprecated compatibility argument; retained for API stability and ignored.
+    search_model : str | None, optional
+        If provided, perform an external Perplexity search to seed the ensemble workflow with a summarised candidate roster.
     return_details : bool, optional
         When True, include per-model raw results in ``raw_results``.
 
@@ -379,14 +382,63 @@ def get_celltype_ensemble(
     gene_dic = ul.get_gene_dict(input, group, key, topnumber, rm_genes)
     logger.info("Prepared %d cluster gene sets for ensemble analysis.", len(gene_dic))
 
-    chat_msg = ul.list_celltype(
-        len(gene_dic),
-        background,
-        default_provider,
-        default_model,
-        default_base_url,
-        sys_prompt,
-    )
+    search_results = None
+    if search_model:
+        search_results = ul.search_celltype_for_clusters(
+            background,
+            gene_dic,
+            search_model=search_model,
+            max_workers=max_workers,
+        )
+        summary_agent = Agent(
+            model=default_model,
+            provider=default_provider,
+            sys_prompt=sys_prompt,
+            base_url=default_base_url,
+        )
+        perplexity_summary = search_results.get("summary", "")
+        detail_lines = []
+        details = search_results.get("details", {}) or {}
+        for cluster_id in sorted(gene_dic, key=str):
+            detail = details.get(cluster_id) or details.get(str(cluster_id)) or {}
+            content = detail.get("content") or ""
+            detail_lines.append(f"Cluster {cluster_id}: {content}")
+        detail_block = "\n".join(detail_lines)
+        summary_prompt = (
+            "You are assisting with scRNA-Seq cluster annotation.\n"
+            f"Background: {background or 'unspecified'}.\n"
+            "External evidence suggests the following potential identities for each cluster:\n"
+            f"{perplexity_summary}\n\n"
+            "Provide a concise, well-structured overview of the most likely cell types per cluster, "
+            "highlighting the leading hypothesis and key rationale for each cluster in 1-2 sentences."
+        )
+        try:
+            candidate_content = summary_agent.query(
+                summary_prompt,
+                use_context=False,
+                add_context=False,
+                use_cache=False,
+            ).strip()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception(
+                "Failed to summarize Perplexity search outputs for ensemble run, falling back: %s",
+                exc,
+            )
+            candidate_content = perplexity_summary or detail_block
+        chat_msg = [
+            {"role": "user", "content": summary_prompt},
+            {"role": "assistant", "content": candidate_content},
+        ]
+    else:
+        chat_msg = ul.list_celltype(
+            len(gene_dic),
+            background,
+            default_provider,
+            default_model,
+            default_base_url,
+            sys_prompt,
+        )
+        candidate_content = chat_msg[-1]["content"]
 
     ot = ul.Outputor(out)
     ot.write("# CellType Analysis (Ensemble)")
@@ -397,7 +449,10 @@ def get_celltype_ensemble(
     ot.write(
         f"In scRNA-Seq data background of '{background}', the following Potential CellType to be identified:"
     )
-    ot.write(chat_msg[-1]["content"])
+    ot.write(candidate_content)
+    if search_results:
+        ot.write("## Online Search Overview")
+        ot.write(search_results.get("summary", ""))
 
     ensemble_configs = [
         {
@@ -449,7 +504,7 @@ def get_celltype_ensemble(
         cluster_pathway = pathway.get(cluster_id, {})
         pw_txt = _prepare_pathway_text(cluster_pathway)
         pct_txt = CELLTYPE_PROMPT.format(
-            candidate=chat_msg[-1]["content"],
+            candidate=candidate_content,
             setid=cluster_id,
             gene=gene_txt,
             setnum=len(gene_dic),
@@ -504,6 +559,34 @@ def get_celltype_ensemble(
         ot.write("### Gene List\n")
         ot.write(f"Top genes\n```\n{','.join(genes)}\n```\n")
         ot.write(f"enrichment pathway\n```\n{pw_txt}```\n")
+        if search_results:
+            detail = search_results.get("details", {}).get(
+                cluster_id
+            ) or search_results.get("details", {}).get(str(cluster_id), {})
+            ot.write("### Online Search Output\n")
+            per_content = detail.get("content") if detail else None
+            ot.write(per_content or "No response returned by Perplexity.")
+            ot.write("### Online Search Citations\n")
+            citations = detail.get("citations") if detail else None
+            if citations:
+                for cite in citations:
+                    if isinstance(cite, dict):
+                        title = (
+                            cite.get("title")
+                            or cite.get("lock_title")
+                            or cite.get("description")
+                            or cite.get("url")
+                            or "Citation"
+                        )
+                        url = cite.get("url") or cite.get("source")
+                        if url:
+                            ot.write(f"- {title}: {url}")
+                        else:
+                            ot.write(f"- {title}")
+                    else:
+                        ot.write(f"- {cite}")
+            else:
+                ot.write("No citations provided.")
         ot.write("### celltype thinking\n")
         if history:
             ot.write(history[0])
