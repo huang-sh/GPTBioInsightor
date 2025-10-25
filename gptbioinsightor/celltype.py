@@ -155,6 +155,17 @@ def get_celltype(
     )
     if not search_model:
         candidate_content = chat_msg[-1]["content"] if chat_msg else ""
+    candidate_content = candidate_content or ""
+    reminder_text = (
+        "Reminder: If the current cluster serves as the broad parent lineage for other clusters "
+        "(e.g., multiple clusters roll up to this umbrella cell type), zoom in on this cluster with "
+        "more granular reasoning and spell out the evidence that sets it apart."
+    )
+    if reminder_text not in candidate_content:
+        if candidate_content:
+            candidate_content = f"{candidate_content.rstrip()}\n{reminder_text}"
+        else:
+            candidate_content = reminder_text
     ot.write(candidate_content)
     if search_results:
         ot.write("## Online Search Overview")
@@ -439,6 +450,18 @@ def get_celltype_ensemble(
             sys_prompt,
         )
         candidate_content = chat_msg[-1]["content"]
+
+    candidate_content = candidate_content or ""
+    reminder_text = (
+        "Reminder: If the current cluster serves as the broad parent lineage for other clusters "
+        "(e.g., multiple clusters roll up to this umbrella cell type), zoom in on this cluster with "
+        "more granular reasoning and spell out the evidence that sets it apart."
+    )
+    if reminder_text not in candidate_content:
+        if candidate_content:
+            candidate_content = f"{candidate_content.rstrip()}\n{reminder_text}"
+        else:
+            candidate_content = reminder_text
 
     ot = ul.Outputor(out)
     ot.write("# CellType Analysis (Ensemble)")
