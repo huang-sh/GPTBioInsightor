@@ -44,9 +44,19 @@ def extract_score(content, provider, model, base_url):
         max_tokens=4000,
         messages=[
             {
+                "role": "system",
+                "content": (
+                    "You are a precise information extractor. "
+                    "Read the user message and identify each candidate cell type name "
+                    "and its numeric score (0-100). Return only the structured data "
+                    "matching the response schema. Do not infer new cell types or scores "
+                    "beyond what is explicitly present."
+                ),
+            },
+            {
                 "role": "user",
                 "content": content,
-            }
+            },
         ],
         response_model=ScoreInfo,
     )
