@@ -762,16 +762,10 @@ def search_celltype_for_clusters(
                     "completion": {"error": str(exc)},
                 }
 
-    def _shorten(text, limit=220):
-        stripped = " ".join(text.strip().split())
-        if len(stripped) <= limit:
-            return stripped
-        return stripped[: limit - 3].rstrip() + "..."
-
     summary_lines = []
     for cluster_id in sorted(details, key=str):
         content = details[cluster_id].get("content") or "No response."
-        summary_lines.append(f"cluster {cluster_id}: {_shorten(content)}")
+        summary_lines.append(f"cluster {cluster_id}: {content}")
     summary = "\n".join(summary_lines)
     messages = [
         {
