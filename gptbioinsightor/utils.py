@@ -77,7 +77,10 @@ def parse_api(provider, model, base_url):
         items = model.split(":")
         provider = items[0]
         model = ":".join(items[1:])
-        base_url = API_SOURCE[provider]
+        if provider in API_SOURCE:
+            base_url = API_SOURCE[provider]
+        else:
+            base_url = base_url
     return provider, model, base_url
 
 
