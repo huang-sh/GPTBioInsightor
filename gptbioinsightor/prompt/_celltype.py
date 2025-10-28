@@ -60,6 +60,7 @@ But make reasonable inferential extensions, such as :
 Prioritize identifying the correct broad lineage for cluster {setid}. Scan <Candidate_celltype> for references to other clusters; only add refined subtypes or states when those clusters share the same lineage, and explicitly state the distinguishing evidence that separates cluster {setid} from its peers.
 Always tie your reasoning back to the specified cluster identifier and echo the final label you selected for cluster {setid}.
 It should be noted that possible contaminants, residual populations, or technical artifacts may remain due to limitations in isolation, processing, or measurement. Treat these non-ideal components as potential minor confounders when forming conclusions rather than assuming a perfectly pure sample.
+Always express every predicted cell type using the standardized Cell Ontology term (only show official CL label, not CL ID).
 </Reminder>
 <Input>
   <biological_context>
@@ -79,7 +80,7 @@ As BioInsightor, please think about three most likely celltypes for Input based 
 
 
 CELLTYPE_REPORT = """
-Output Format (high socre celltype appear first), without any additional prompt or string:
+Output Format (high socre celltype appear first), without any additional prompt or string. Use standardized Cell Ontology term names for every [CELLTYPE NAME]:
 '''
 
 ### Celltype Prediction
