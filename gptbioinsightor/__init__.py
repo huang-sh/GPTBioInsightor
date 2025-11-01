@@ -21,7 +21,7 @@ from .utils import (
 from .logging_utils import configure_logging, logger
 
 
-__version__ = "0.7.2"
+__version__ = "0.7.5"
 
 __all__ = [
     "get_celltype",
