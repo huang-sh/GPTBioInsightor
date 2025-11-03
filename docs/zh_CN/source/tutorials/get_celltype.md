@@ -72,7 +72,8 @@ sc.tl.leiden(
     directed=False,
 )
 sc.tl.umap(adata)
-sc.tl.rank_genes_groups(adata, "leiden", key_added="logreg_deg", method="logreg")
+sc.tl.rank_genes_groups(adata, "leiden", key_added="deg_key")
+pathway_dic = gbi.enrich(adata, key="deg_key", pval=0.05, n_jobs=2, gene_sets="WikiPathways_2024_Human")
 ```
 
 使用GPTBioinsightor进行细胞类型注解
@@ -87,8 +88,10 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # 使用阿里的通义千问qwen-max-latest
 # 也可以设置成其他模型
+# if you also want to list references papers, 
+# you should set , search_model="sonar", and set PERPLEXITY_API_KEY
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.qwen.celltype.md", key="logreg_deg", 
+                       out="gbi.qwen.celltype.md", key="deg_key", 
                        topnumber=15,provider="aliyun", 
                        n_jobs=4,model="qwen-max-latest")
 res
@@ -100,7 +103,11 @@ res
 #  '5': 'Monocytes/Macrophages',
 #  '6': 'Dendritic Cells',
 #  '7': 'Platelets'}
+## score heatmap
+gbi.utils.score_heatmap(res)
 ```
+![score cluster](../img/score_cluster.png)
+
 
 和基于已知gene marker的手动注释的结果进行比较
 ```python

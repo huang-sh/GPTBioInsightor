@@ -71,7 +71,8 @@ sc.tl.leiden(
     directed=False,
 )
 sc.tl.umap(adata)
-sc.tl.rank_genes_groups(adata, "leiden", key_added="logreg_deg", method="logreg")
+sc.tl.rank_genes_groups(adata, "leiden", key_added="deg_key")
+pathway_dic = gbi.enrich(adata, key="deg_key", pval=0.05, n_jobs=2, gene_sets="WikiPathways_2024_Human")
 ```
 
 Performing cell type annotation using GPTBioinsightor:
@@ -92,8 +93,11 @@ background = "Cells are PBMCs from a Healthy Donor"
 
 # Here, use claude-3-5-sonnet-20241022 of anthropic, 
 # but you also can use other supported LLM provider.
+# if you also want to list references papers, 
+# you should set , search_model="sonar", and set PERPLEXITY_API_KEY
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.claude.celltype.md", key="logreg_deg", 
+                       out="gbi.claude.celltype.md", key="deg_key", 
+                       pathway=pathway_dic,
                        topnumber=15,provider="anthropic", 
                        n_jobs=4,model="claude-3-5-sonnet-20241022")
 # {'0': {'Naive T cells': '92',
