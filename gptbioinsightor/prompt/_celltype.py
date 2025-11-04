@@ -189,6 +189,30 @@ In addition to your thinking process, the final result should be returned with f
 """
 
 
+USER_DEFINED_CELLTYPE_SCORE = """
+Scoring_Criteria_PROMPT
+
+<Reminder>
+- Score each cell type independently according to Scoring Criteria, without being influenced by the scores of other cell types.
+- Do not use the lack of classic markers as the basis for your scoring.
+- Negative markers are markers which are impossible to be present in the cell type.
+- For matching cell type or state markers, e.g. if scoring B cell, PTPRC is pan-leukocyte marker, match B cell
+- For narrow markers of cell type or state, e.g. if scoring B cell, PTPRC is pan-leukocyte marker for immnue cell(broad Category for B cell), not Narrow marker for B cell
+- Give full points if there are classical or well-known markers to support cell type or state
+- Align your scoring roster with the latest `Candidate Roster` provided earlier in the conversation if `Candidate Roster` exist; treat it as the authoritative list of cell types to evaluate.
+</Reminder>
+<Task>
+Please review and correct above content if anything wrong, then score the each Cell Type Prediction of cluster geneset using Scoring_Criteria (100 points),
+In addition to your thinking process, the final result should be returned with format: response_format,  do not include tag
+</Task>
+<response_format>
+{CELLTYPE1}: {SCORE}
+{CELLTYPE2}: {SCORE}
+{CELLTYPE3}: {SCORE}
+</response_format>
+"""
+
+
 CELLTYPE_QC_PROMPT = """
 ## cluster geneset {setid}
 

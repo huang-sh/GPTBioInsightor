@@ -181,7 +181,14 @@ def agent_pipe(agent, pct_txt, score_prompt: str | None = None, cluster_id=None)
     )
     logger.info(f"Generating detailed reasoning for {cluster_label}.")
     agent.query(pct_txt, use_context=True, add_context=True, use_cache=True)
-    score_instruction = CELLTYPE_SCORE if score_prompt is None else score_prompt
+    if score_prompt is None:
+        score_instruction = CELLTYPE_SCORE
+    else:
+        from .prompt import USER_DEFINED_CELLTYPE_SCORE
+
+        score_instruction = USER_DEFINED_CELLTYPE_SCORE.replace(
+            "Scoring_Criteria_PROMPT", score_prompt
+        )
     logger.info(f"Requesting scoring details for {cluster_label}.")
     scores = agent.query(
         score_instruction, use_context=True, add_context=True, use_cache=False
