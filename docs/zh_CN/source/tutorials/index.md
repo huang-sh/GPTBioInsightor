@@ -9,6 +9,7 @@
 get_celltype.md
 get_subtype.md
 check_celltype
+user_defined_score.md
 ```
 ## 通路分析
 ```{toctree}
