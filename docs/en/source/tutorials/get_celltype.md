@@ -96,10 +96,10 @@ background = "Cells are PBMCs from a Healthy Donor"
 # if you also want to list references papers, 
 # you should set , search_model="sonar", and set PERPLEXITY_API_KEY
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.claude.celltype.md", key="deg_key", 
-                       pathway=pathway_dic,
-                       topnumber=15,provider="anthropic", 
-                       n_jobs=4,model="claude-3-5-sonnet-20241022")
+                       out=["gbi.claude.celltype.md", "gbi.claude.celltype.html"],
+                       key="deg_key", pathway=pathway_dic,
+                       topnumber=15, provider="anthropic", 
+                       n_jobs=4, model="claude-3-5-sonnet-20241022")
 # {'0': {'Naive T cells': '92',
 #   'Central Memory T cells': '85',
 #   'Early Activated T cells': '75'},
@@ -123,6 +123,8 @@ res = gbi.get_celltype(adata, background=background,
 ## score heatmap
 gbi.utils.score_heatmap(res)
 ```
+
+Any path supplied in `out` that ends with `.html` (or `.htm`) produces the interactive HTML report, while other paths receive the Markdown/text version. Provide a list like `["gbi.claude.celltype.md", "gbi.claude.celltype.html"]` to generate both formats simultaneously.
 ![score cluster](../img/score_cluster.png)
 
 Comparing the results with manual annotations based on classic gene markers

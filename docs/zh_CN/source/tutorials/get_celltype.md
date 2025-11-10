@@ -91,7 +91,8 @@ background = "Cells are PBMCs from a Healthy Donor"
 # if you also want to list references papers, 
 # you should set , search_model="sonar", and set PERPLEXITY_API_KEY
 res = gbi.get_celltype(adata, background=background, 
-                       out="gbi.qwen.celltype.md", key="deg_key", 
+                       out=["gbi.qwen.celltype.md", "gbi.qwen.celltype.html"],
+                       key="deg_key",
                        topnumber=15,provider="aliyun", 
                        n_jobs=4,model="qwen-max-latest")
 res
@@ -106,6 +107,8 @@ res
 ## score heatmap
 gbi.utils.score_heatmap(res)
 ```
+
+在 `out` 参数中提供 `.html` 或 `.htm` 结尾的路径即可生成交互式 HTML 报告，同时提供 Markdown 路径（例如 `["gbi.qwen.celltype.md", "gbi.qwen.celltype.html"]`）即可一次生成双份输出，方便保存与分享。
 ![score cluster](../img/score_cluster.png)
 
 
