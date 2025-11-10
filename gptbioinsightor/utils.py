@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from collections import defaultdict
+from html import escape
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -587,6 +588,399 @@ def add_obs(adata, score_dic, add_key="gbi_celltype", cluster_key="leiden"):
         new_dic[key] = max_cell
     adata.obs[add_key] = adata.obs[cluster_key].map(new_dic)
     return adata
+
+
+def generate_html_report(report_data, output_path: str | Path):
+    """Create a standalone HTML report summarizing cell type predictions."""
+
+    def _render_text_block(text: str | None):
+        if not text:
+            return '<div class="empty">No additional details.</div>'
+        clean = text.strip()
+        if not clean:
+            return '<div class="empty">No additional details.</div>'
+        return f"<pre>{escape(clean)}</pre>"
+
+    def _render_pathways(pathways: dict | None):
+        if not pathways:
+            return '<div class="empty">No pathway enrichment provided.</div>'
+        sections = []
+        for db_name, terms in pathways.items():
+            term_tags = "".join(
+                f'<span class="tag">{escape(str(term))}</span>' for term in terms
+            )
+            sections.append(
+                f'<div class="pathway-block"><strong>{escape(str(db_name))}</strong><div class="tag-wrap">{term_tags}</div></div>'
+            )
+        return "".join(sections)
+
+    def _render_scores(scores: list | None):
+        if not scores:
+            return '<div class="empty">No structured scores available.</div>'
+        rows = []
+        for entry in scores:
+            celltype = escape(str(entry.get("celltype", "Unknown")))
+            try:
+                score_val = float(entry.get("score", 0.0))
+            except (TypeError, ValueError):
+                score_val = 0.0
+            rows.append(f"<tr><td>{celltype}</td><td>{score_val:.1f}</td></tr>")
+        return (
+            '<table class="score-table"><thead><tr><th>Cell type</th><th>Score</th>'
+            "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
+        )
+
+    def _render_citations(citations):
+        if not citations:
+            return "<li>No citations provided.</li>"
+        if isinstance(citations, str):
+            citations = [citations]
+        items = []
+        for cite in citations:
+            if isinstance(cite, dict):
+                title = (
+                    cite.get("title")
+                    or cite.get("lock_title")
+                    or cite.get("description")
+                    or cite.get("url")
+                    or cite.get("source")
+                    or "Citation"
+                )
+                url = cite.get("url") or cite.get("source")
+                if url:
+                    items.append(
+                        f"<li>{escape(str(title))}: "
+                        f'<a href="{escape(str(url))}" target="_blank" rel="noopener noreferrer">'
+                        f"{escape(str(url))}</a></li>"
+                    )
+                else:
+                    items.append(f"<li>{escape(str(title))}</li>")
+            else:
+                items.append(f"<li>{escape(str(cite))}</li>")
+        return "".join(items)
+
+    def _confidence_label(score: float | None):
+        if score is None:
+            return "Unknown"
+        if score >= 85:
+            return "High"
+        if score >= 60:
+            return "Moderate"
+        return "Low"
+
+    clusters = report_data.get("clusters") or []
+    nav_items = []
+    cards = []
+    for idx, cluster in enumerate(clusters):
+        cid = cluster.get("cluster_id", idx)
+        scores = cluster.get("scores") or []
+        if scores:
+            try:
+                top_score = float(scores[0].get("score", 0.0))
+            except (TypeError, ValueError):
+                top_score = None
+            top_label = scores[0].get("celltype") or "Not provided"
+        else:
+            top_score = None
+            top_label = "Not provided"
+        confidence = _confidence_label(top_score)
+        score_display = "N/A" if top_score is None else f"{top_score:.0f}%"
+        nav_items.append(
+            (
+                f'<li class="cluster-item{" active" if idx == 0 else ""}" '
+                f'data-target="cluster-{idx}">'
+                f'<div><div class="cluster-title">Cluster {escape(str(cid))}</div>'
+                f'<div class="cluster-label">{escape(str(top_label))}</div></div>'
+                f'<span class="cluster-score">{score_display} • {confidence}</span>'
+                "</li>"
+            )
+        )
+        genes = cluster.get("genes") or []
+        gene_tags = "".join(
+            f'<span class="tag">{escape(str(gene))}</span>' for gene in genes
+        )
+        gene_block = gene_tags or '<div class="empty">No genes provided.</div>'
+        citations = cluster.get("citations") or []
+        citation_html = _render_citations(citations)
+        online_block = cluster.get("online_search") or ""
+        cards.append(
+            f'<article id="cluster-{idx}" class="cluster-card{" active" if idx == 0 else ""}">'
+            f"<header><div><h3>Cluster {escape(str(cid))}</h3>"
+            f'<p class="lead">{escape(str(top_label))}</p>'
+            f'<span class="badge">Confidence: {confidence}</span></div></header>'
+            "<section><h4>Top Genes</h4>"
+            f'<div class="tag-wrap">{gene_block}</div></section>'
+            "<section><h4>Enrichment Pathway</h4>"
+            f"{_render_pathways(cluster.get('pathways'))}</section>"
+            "<section><h4>Online Search</h4>"
+            f"{_render_text_block(online_block)}"
+            "<h5>Citations</h5>"
+            f"<ul>{citation_html}</ul></section>"
+            "<section><h4>Thinking</h4>"
+            f"{_render_text_block(cluster.get('thinking'))}</section>"
+            "<section><h4>Score Rationale</h4>"
+            f"{_render_text_block(cluster.get('score_text'))}"
+            f"{_render_scores(scores)}</section>"
+            "<section><h4>Report</h4>"
+            f"{_render_text_block(cluster.get('report_text'))}</section>"
+            "</article>"
+        )
+
+    nav_html = "".join(nav_items) or '<li class="empty">No clusters available.</li>'
+    cards_html = "".join(cards) or '<div class="empty">No cluster details.</div>'
+    summary_block = _render_text_block(report_data.get("potential_celltype"))
+    disclaimer = escape(report_data.get("disclaimer") or "")
+    background = escape(report_data.get("background") or "Unspecified")
+    online_summary = _render_text_block(report_data.get("online_search_summary"))
+    online_section = ""
+    if report_data.get("online_search_summary"):
+        online_section = (
+            '<details class="collapsible">'
+            "<summary>Online Search Overview</summary>"
+            f"{online_summary}"
+            "</details>"
+        )
+
+    html_doc = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{escape(report_data.get("title") or "GPTBioInsightor Report")}</title>
+    <style>
+        body {{
+            font-family: "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            background: #f5f6fb;
+            color: #1f2937;
+        }}
+        header.hero {{
+            background: linear-gradient(90deg, #0a84ff, #4c6ef5);
+            color: #fff;
+            padding: 32px;
+        }}
+        header.hero h1 {{
+            margin: 0 0 8px;
+        }}
+        header.hero p {{
+            margin: 4px 0;
+        }}
+        main {{
+            padding: 24px;
+        }}
+        .summary-card {{
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            margin-bottom: 24px;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }}
+        details.collapsible {{
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            background: #f8fafc;
+        }}
+        .summary-card details.collapsible {{
+            margin-top: 16px;
+        }}
+        .summary-card details.collapsible:first-of-type {{
+            margin-top: 0;
+        }}
+        details.collapsible summary {{
+            font-weight: 600;
+            font-size: 1rem;
+            color: #0f172a;
+            cursor: pointer;
+            outline: none;
+            list-style: none;
+        }}
+        details.collapsible summary::marker,
+        details.collapsible summary::-webkit-details-marker {{
+            display: none;
+        }}
+        details.collapsible summary::after {{
+            content: "▼";
+            float: right;
+            transition: transform 0.2s ease;
+        }}
+        details.collapsible[open] summary::after {{
+            transform: rotate(-180deg);
+        }}
+        .grid {{
+            display: grid;
+            gap: 24px;
+        }}
+        .layout {{
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }}
+        .cluster-nav {{
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        }}
+        .cluster-nav ul {{
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }}
+        .cluster-item {{
+            padding: 16px 20px;
+            border-bottom: 1px solid #eef2ff;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s ease;
+        }}
+        .cluster-item.active {{
+            background: #eef2ff;
+        }}
+        .cluster-item:hover {{
+            background: #f5f7ff;
+        }}
+        .cluster-title {{
+            font-weight: 600;
+            color: #1d4ed8;
+        }}
+        .cluster-label {{
+            font-size: 0.9rem;
+            color: #475569;
+        }}
+        .cluster-score {{
+            font-weight: 600;
+            color: #0f172a;
+        }}
+        .cluster-details {{
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }}
+        .cluster-card {{
+            display: none;
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }}
+        .cluster-card.active {{
+            display: block;
+        }}
+        .badge {{
+            display: inline-block;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }}
+        section {{
+            margin-top: 16px;
+        }}
+        h4 {{
+            margin-bottom: 8px;
+            color: #111827;
+        }}
+        pre {{
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            overflow: auto;
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }}
+        .tag-wrap {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }}
+        .tag {{
+            display: inline-block;
+            background: #eef2ff;
+            color: #312e81;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }}
+        .pathway-block {{
+            margin-bottom: 12px;
+        }}
+        .score-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }}
+        .score-table th, .score-table td {{
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            text-align: left;
+        }}
+        .empty {{
+            color: #94a3b8;
+            font-style: italic;
+        }}
+        @media (max-width: 1024px) {{
+            .layout {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <header class="hero">
+        <h1>{escape(report_data.get("title") or "CellType Analysis")}</h1>
+        <p>Background: {background}</p>
+        {"<p>" + disclaimer + "</p>" if disclaimer else ""}
+    </header>
+    <main>
+        <div class="summary-card">
+            <details class="collapsible">
+                <summary>Potential Cell Types</summary>
+                {summary_block}
+            </details>
+            {online_section}
+        </div>
+        <div class="layout">
+            <aside class="cluster-nav">
+                <h2 style="padding: 20px 20px 0;">Clusters</h2>
+                <ul>{nav_html}</ul>
+            </aside>
+            <section class="cluster-details">
+                {cards_html}
+            </section>
+        </div>
+    </main>
+    <script>
+        const navItems = document.querySelectorAll('.cluster-item');
+        const cards = document.querySelectorAll('.cluster-card');
+        navItems.forEach((item) => {{
+            item.addEventListener('click', () => {{
+                const target = item.getAttribute('data-target');
+                navItems.forEach((nav) => nav.classList.remove('active'));
+                item.classList.add('active');
+                cards.forEach((card) => {{
+                    card.classList.toggle('active', card.id === target);
+                }});
+            }});
+        }});
+    </script>
+</body>
+</html>"""
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(html_doc, encoding="utf-8")
+    logger.info("HTML report saved to '%s'.", output_path)
+    return output_path
 
 
 def _get_perplexity_key():

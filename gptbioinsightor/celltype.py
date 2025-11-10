@@ -23,7 +23,7 @@ from .logging_utils import logger
 
 def get_celltype(
     input: AnnData | dict,
-    out: Path | str = None,
+    out: Path | str | Iterable[Path | str] | None = None,
     background: str = None,
     pathway: dict | None = None,
     key: str = "rank_genes_groups",
@@ -44,8 +44,12 @@ def get_celltype(
     ----------
     input : AnnData | dict
         An AnnData object or geneset dict
-    out : Path | str, optional
-        output path, by default None
+    out : Path | str | Iterable[Path | str] | None, optional
+        Output target(s). Provide a path to save the Markdown/text report,
+        an HTML path (``.html`` or ``.htm``) for the interactive report, or
+        an iterable of paths (e.g. ``["report.md", "report.html"]``) to
+        generate multiple outputs. When omitted, the text report is printed
+        to stdout only.
     background : str, optional
         background information of input data, by default None
     key : str, optional
@@ -144,7 +148,78 @@ def get_celltype(
         provider or "default",
         model or "default",
     )
-    ot = ul.Outputor(out)
+
+    def _normalize_outputs(targets):
+        if targets is None:
+            return []
+        if isinstance(targets, (str, Path)):
+            return [targets]
+        if isinstance(targets, Iterable):
+            normalized = []
+            for item in targets:
+                if isinstance(item, (str, Path)):
+                    normalized.append(item)
+                else:
+                    raise TypeError(
+                        "Each entry in 'out' must be a string or pathlib.Path instance."
+                    )
+            return normalized
+        raise TypeError(
+            "'out' must be a path-like object or an iterable of path-like objects."
+        )
+
+    requested_outputs = out is not None
+    resolved_outputs = _normalize_outputs(out)
+    if requested_outputs and not resolved_outputs:
+        logger.warning(
+            "No valid output targets provided via 'out'; defaulting to stdout."
+        )
+
+    html_outputs = [
+        Path(target)
+        for target in resolved_outputs
+        if str(target).lower().endswith((".html", ".htm"))
+    ]
+    text_outputs = [
+        Path(target)
+        for target in resolved_outputs
+        if not str(target).lower().endswith((".html", ".htm"))
+    ]
+
+    class _SilentOutput:
+        def write(self, text):
+            pass
+
+        def close(self):
+            pass
+
+    extra_text_outputs: list[Path] = []
+    primary_text_output: Path | None = None
+    if text_outputs:
+        primary_text_output = text_outputs[0]
+        extra_text_outputs = text_outputs[1:]
+        ot = ul.Outputor(primary_text_output)
+    else:
+        if requested_outputs and html_outputs:
+            ot = _SilentOutput()
+        else:
+            ot = ul.Outputor(None)
+
+    if html_outputs:
+        report_context = {
+            "title": "CellType Analysis",
+            "background": background,
+            "disclaimer": (
+                "GPTBioInsightor is powered by AI, so mistakes are possible. "
+                "Review output carefully before use."
+            ),
+            "potential_celltype": "",
+            "online_search_summary": "",
+            "clusters": [],
+        }
+    else:
+        report_context = None
+
     ot.write("# CellType Analysis")
     ot.write(
         "GPTBioInsightor is powered by AI, so mistakes are possible. Review output carefully before use"
@@ -167,9 +242,13 @@ def get_celltype(
         else:
             candidate_content = reminder_text
     ot.write(candidate_content)
+    if report_context is not None:
+        report_context["potential_celltype"] = candidate_content
     if search_results:
         ot.write("## Online Search Overview")
         ot.write(search_results.get("summary", ""))
+        if report_context is not None:
+            report_context["online_search_summary"] = search_results.get("summary", "")
 
     worker_count = n_jobs
     if worker_count is None:
@@ -180,16 +259,19 @@ def get_celltype(
         futures = {}
         pathway = {} if pathway is None else pathway
         pathway_txt_dic = {}
+        pathway_struct_dic = {}
         for k, genes in gene_dic.items():
             agent = Agent(
                 model=model, provider=provider, sys_prompt=sys_prompt, base_url=base_url
             )
             gene_txt = f"   - cluster {k}: {','.join(genes[:topnumber])}"
             cluster_pathway = pathway.get(k, {})
+            # track both text and structured pathway info for downstream reporting
             pw_txt = ""
             for db, pw in cluster_pathway.items():
                 pw_txt += f"    - {db}: {','.join(pw)}\n"
             pathway_txt_dic[k] = pw_txt
+            pathway_struct_dic[k] = cluster_pathway
             pct_txt = CELLTYPE_PROMPT.format(
                 candidate=candidate_content,
                 setid=k,
@@ -250,8 +332,39 @@ def get_celltype(
             ot.write(reps[2])
             score_ls = extract_score(reps[1], provider, model, base_url).score_ls
             score_dic[k] = {entry.celltype: entry.score for entry in score_ls}
+            if report_context is not None:
+                score_entries = [
+                    {"celltype": entry.celltype, "score": float(entry.score)}
+                    for entry in score_ls
+                ]
+                detail = search_results["details"].get(k, {}) if search_results else {}
+                report_context["clusters"].append(
+                    {
+                        "cluster_id": str(k),
+                        "genes": gene_dic[k],
+                        "pathways": pathway_struct_dic.get(k, {}),
+                        "online_search": detail.get("content"),
+                        "citations": detail.get("citations"),
+                        "thinking": reps[0],
+                        "score_text": reps[1],
+                        "report_text": reps[2],
+                        "scores": score_entries,
+                    }
+                )
             logger.info("Finished scoring cluster %s.", k)
     score_dic = ul.unify_name(score_dic, model, provider, base_url)
+    ot.close()
+    if primary_text_output is not None and extra_text_outputs:
+        import shutil
+
+        for extra_path in extra_text_outputs:
+            shutil.copyfile(primary_text_output, extra_path)
+    if report_context is not None:
+        for html_path in html_outputs:
+            try:
+                ul.generate_html_report(report_context, html_path)
+            except Exception:
+                logger.exception("Failed to generate HTML report at '%s'.", html_path)
     logger.info("Cell type identification completed successfully.")
     return score_dic
 
