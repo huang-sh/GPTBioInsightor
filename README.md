@@ -106,3 +106,9 @@ LDHB, LTB, RGCC, IL32, NOSIP, CD3D, CD3E, TMEM123, VIM, TMEM66, FYB, JUNB, CCR7,
 ## Contact
 
 - Shenghui Huang (hsh-me@outlook.com)
+
+## Citation
+
+If you find it helpful in your research, please consider citing the paper.
+
+> Shenghui Huang, Berina Šabanović, Yuzhong Peng, Quan Zheng, Luca Alessandri, Christopher Heeschen, GPTBioInsightor—Leveraging LLMs for transparent scRAN-Seq cell type annotations, Bioinformatics Advances, 2026;, vbag025, https://doi.org/10.1093/bioadv/vbag025
